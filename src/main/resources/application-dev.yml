@@ -49,7 +49,7 @@ spring:
 # 豆包 AI 配置
 doubao:
   api:
-    key: ark-4126af52-1fda-4c17-8561-8db89e066502-95563
+    key: your_key
     endpoint: https://ark.cn-beijing.volces.com/api/v3/chat/completions
     model: Doubao-pro-32k
     timeout: 30000
