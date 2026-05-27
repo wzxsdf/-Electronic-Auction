@@ -35,10 +35,24 @@ public class Auction {
 
     @TableField(fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updatedAt;
+
+    // 结算相关字段
+    private Long winnerId;           // 获胜者ID
+    private BigDecimal finalPrice;   // 最终成交价格
+    private LocalDateTime settledAt;  // 结算时间
+    private Long roomId;             // 竞拍房间ID
+
+    // 延时相关字段
+    @TableField(exist = false)
+    private Integer delayCount = 0;  // 延时次数计数
+
+    // 关联商品信息（不持久化）
     @TableField(exist = false)
     private String productName;
+
     @TableField(exist = false)
     private String productImageUrl;
+
     @TableField(exist = false)
     private String description;
 

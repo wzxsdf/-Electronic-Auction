@@ -34,9 +34,17 @@ public enum ErrorCode {
     PRODUCT_NOT_FOUND(4001, "商品不存在"),
     PRODUCT_ALREADY_IN_AUCTION(4002, "商品已在竞拍中"),
 
-    // 风控相关 5000-5999
-    RISK_BLOCKED(5001, "触发风控拦截"),
-    RISK_HIGH(5002, "账户风险等级过高，请稍后再试");
+    // 订单相关 5000-5999
+    ORDER_NOT_FOUND(5001, "订单不存在"),
+    ORDER_STATUS_INVALID(5002, "订单状态无效"),
+    ORDER_ALREADY_PAID(5003, "订单已支付"),
+    ORDER_ALREADY_CANCELLED(5004, "订单已取消"),
+    PAYMENT_FAILED(5005, "支付失败"),
+    PAYMENT_TIMEOUT(5006, "支付超时"),
+
+    // 风控相关 6000-6999
+    RISK_BLOCKED(6001, "触发风控拦截"),
+    RISK_HIGH(6002, "账户风险等级过高，请稍后再试");
 
     private final int code;
     private final String message;

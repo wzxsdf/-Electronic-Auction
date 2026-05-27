@@ -66,4 +66,32 @@ public class AuctionRepository {
     public void deleteById(Long id) {
         auctionMapper.deleteById(id);
     }
+
+    /**
+     * 查找已到期但仍为活跃状态的竞拍
+     * 用于定时任务结算
+     */
+    public List<Auction> findExpiredActiveAuctions(LocalDateTime now) {
+        return auctionMapper.selectList(
+            new LambdaQueryWrapper<Auction>()
+                .eq(Auction::getStatus, AuctionStatus.ACTIVE.name())
+                .le(Auction::getEndTime, now)
+        );
+    }
+
+    /**
+     * 查找需要延期的竞拍（临近结束且有最新出价）
+     */
+    public List<Auction> findAuctionsNeedDelay(LocalDateTime now, int delaySeconds) {
+        return auctionMapper.selectList(
+            new LambdaQueryWrapper<Auction>()
+                .eq(Auction::getStatus, AuctionStatus.ACTIVE.name())
+                .le(Auction::getEndTime, now.plusSeconds(delaySeconds))
+                .ge(Auction::getEndTime, now)
+        );
+    }
+
+    public boolean existsById(Long id) {
+        return auctionMapper.selectById(id) != null;
+    }
 }

@@ -34,6 +34,7 @@ public class BidService {
     private final WsMessageService wsMessageService;
     private final RedisService redisService;
     private final DistributedLockService distributedLockService;
+    private final com.auction.service.settlement.AuctionDelayService auctionDelayService;
 
     /**
      * 出价（使用分布式锁保证并发安全）
@@ -114,7 +115,13 @@ public class BidService {
         user.setTotalBids(user.getTotalBids() + 1);
         userRepository.updateById(user);
 
-        // 14. 计算剩余时间
+        // 14. 记录出价时间用于延时判断
+        auctionDelayService.recordBidTime(request.getAuctionId());
+
+        // 15. 检查是否需要延时
+        auctionDelayService.checkDelayForAuction(request.getAuctionId());
+
+        // 16. 计算剩余时间
         Long remainingMs = calculateRemainingMs(auction);
 
         log.info("出价成功: auctionId={}, userId={}, amount={}, rank={}",

@@ -136,6 +136,170 @@ public class WsMessageService {
         }
     }
 
+    /**
+     * 异步发送竞拍结束通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendAuctionEnded(Long auctionId, Long winnerId, java.math.BigDecimal finalPrice, boolean hasBids) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "winnerId", winnerId,
+                "finalPrice", finalPrice,
+                "hasBids", hasBids,
+                "message", hasBids ? "竞拍已结束，恭喜成交！" : "竞拍已结束，无人出价"
+            );
+
+            roomManager.broadcastToRoom(
+                auctionId.toString(),
+                createMessage(MessageType.AUCTION_ENDED, data, auctionId)
+            );
+        } catch (Exception e) {
+            log.error("发送竞拍结束通知失败: auctionId={}", auctionId, e);
+        }
+    }
+
+    /**
+     * 异步发送竞拍开始通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendAuctionStarted(Long auctionId) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "message", "竞拍已开始，快来出价吧！"
+            );
+
+            roomManager.broadcastToRoom(
+                auctionId.toString(),
+                createMessage(MessageType.AUCTION_STARTED, data, auctionId)
+            );
+        } catch (Exception e) {
+            log.error("发送竞拍开始通知失败: auctionId={}", auctionId, e);
+        }
+    }
+
+    /**
+     * 异步发送竞拍取消通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendAuctionCancelled(Long auctionId, String reason) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "reason", reason != null ? reason : "竞拍已取消",
+                "message", "竞拍已取消"
+            );
+
+            roomManager.broadcastToRoom(
+                auctionId.toString(),
+                createMessage(MessageType.AUCTION_CANCELLED, data, auctionId)
+            );
+        } catch (Exception e) {
+            log.error("发送竞拍取消通知失败: auctionId={}", auctionId, e);
+        }
+    }
+
+    /**
+     * 异步发送竞拍延时通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendAuctionDelayed(Long auctionId, java.time.LocalDateTime newEndTime) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "newEndTime", newEndTime.toString(),
+                "message", "竞拍时间延长！继续出价吧！"
+            );
+
+            roomManager.broadcastToRoom(
+                auctionId.toString(),
+                createMessage(MessageType.AUCTION_DELAYED, data, auctionId)
+            );
+        } catch (Exception e) {
+            log.error("发送竞拍延时通知失败: auctionId={}", auctionId, e);
+        }
+    }
+
+    /**
+     * 异步发送成交通知（获胜者）
+     */
+    @Async("websocketTaskExecutor")
+    public void sendYouWon(Long userId, Long auctionId, java.math.BigDecimal finalAmount) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "finalAmount", finalAmount,
+                "message", "恭喜您竞拍成功！请及时支付"
+            );
+
+            roomManager.sendToUser(userId,
+                createMessage(MessageType.YOU_WON, data, auctionId)
+            );
+        } catch (Exception e) {
+            log.error("发送成交通知失败: userId={}, auctionId={}", userId, auctionId, e);
+        }
+    }
+
+    /**
+     * 异步发送出价失败通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendBidFailed(Long userId, Long auctionId, String reason) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "reason", reason,
+                "message", "出价失败：" + reason
+            );
+
+            roomManager.sendToUser(userId,
+                createMessage(MessageType.BID_FAILED, data, auctionId)
+            );
+        } catch (Exception e) {
+            log.error("发送出价失败通知失败: userId={}, auctionId={}", userId, auctionId, e);
+        }
+    }
+
+    /**
+     * 异步发送支付成功通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendPaymentSuccess(Long userId, Long orderId, java.math.BigDecimal amount) {
+        try {
+            Map<String, Object> data = Map.of(
+                "orderId", orderId,
+                "amount", amount,
+                "message", "支付成功！感谢您的购买"
+            );
+
+            roomManager.sendToUser(userId,
+                createMessage(MessageType.PAYMENT_SUCCESS, data, null)
+            );
+        } catch (Exception e) {
+            log.error("发送支付成功通知失败: userId={}, orderId={}", userId, orderId, e);
+        }
+    }
+
+    /**
+     * 异步发送支付取消通知
+     */
+    @Async("websocketTaskExecutor")
+    public void sendPaymentCancelled(Long userId, Long orderId) {
+        try {
+            Map<String, Object> data = Map.of(
+                "orderId", orderId,
+                "message", "支付已取消"
+            );
+
+            roomManager.sendToUser(userId,
+                createMessage(MessageType.PAYMENT_CANCELLED, data, null)
+            );
+        } catch (Exception e) {
+            log.error("发送支付取消通知失败: userId={}, orderId={}", userId, orderId, e);
+        }
+    }
+
     private Map<String, Object> createMessage(MessageType type, Object data, Long auctionId) {
         return Map.of(
             "type", type.name(),

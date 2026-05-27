@@ -32,8 +32,18 @@ echo [2/3] 数据库迁移提示...
 echo         如尚未执行迁移，请运行: mysql -u root -p auction ^< migrate.sql
 echo.
 
+REM 停止可能存在的旧实例
+echo [3/4] 停止可能存在的旧实例...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":8080"') do (
+    echo 发现进程 %%a 占用8080端口，正在终止...
+    taskkill /F /PID %%a
+)
+
+REM 等待端口释放
+timeout /t 2 /nobreak >nul
+
 REM 启动应用
-echo [3/3] 启动应用...
+echo [4/4] 启动应用...
 echo.
 cd /d "%~dp0"
 mvn spring-boot:run

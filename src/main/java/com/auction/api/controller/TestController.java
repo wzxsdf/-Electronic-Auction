@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 测试控制器：提供系统健康检查、Redis连接测试等开发调试接口
+ */
 @RestController
 @RequestMapping("/test")
 @RequiredArgsConstructor
@@ -16,7 +19,7 @@ public class TestController {
     private final RedisService redisService;
 
     /**
-     * 健康检查接口
+     * 系统健康检查：返回系统状态和基本信息，用于监控和服务发现
      */
     @GetMapping("/ping")
     public Result<Map<String, String>> ping() {
@@ -28,7 +31,7 @@ public class TestController {
     }
 
     /**
-     * 测试Redis写入功能
+     * 测试Redis写入：向Redis写入键值对，用于验证Redis连接和写入功能
      */
     @PostMapping("/redis/set")
     public Result<Void> testRedisSet(@RequestParam String key, @RequestParam String value) {
@@ -37,7 +40,7 @@ public class TestController {
     }
 
     /**
-     * 测试Redis读取功能
+     * 测试Redis读取：根据键读取Redis中的值，用于验证Redis读取功能
      */
     @GetMapping("/redis/get")
     public Result<Object> testRedisGet(@RequestParam String key) {

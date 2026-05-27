@@ -13,6 +13,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 拍品控制器：管理拍卖活动中的具体拍品，处理出价和拍品状态变更
+ */
 @RestController
 @RequestMapping("/auction-items")
 @RequiredArgsConstructor
@@ -23,7 +26,7 @@ public class AuctionItemController {
     private final DistributedLockService distributedLockService;
 
     /**
-     * 根据ID查询拍品详情
+     * 查询拍品详情：根据ID获取拍品的完整信息（当前价格、出价次数、最高出价者）
      */
     @GetMapping("/{id}")
     public Result<AuctionItem> getById(@PathVariable Long id) {
@@ -35,7 +38,7 @@ public class AuctionItemController {
     }
 
     /**
-     * 查询所有拍品
+     * 查询所有拍品：返回系统中所有拍品记录，包含各种状态
      */
     @GetMapping
     public Result<List<AuctionItem>> listAll() {
@@ -43,7 +46,7 @@ public class AuctionItemController {
     }
 
     /**
-     * 查询所有活跃状态的拍品
+     * 查询活跃拍品：返回正在进行中、可接受出价的拍品列表
      */
     @GetMapping("/active")
     public Result<List<AuctionItem>> listActive() {
@@ -51,7 +54,7 @@ public class AuctionItemController {
     }
 
     /**
-     * 根据房间ID查询该房间的所有拍品
+     * 查询房间内拍品：获取指定拍卖房间内的所有拍品列表
      */
     @GetMapping("/room/{roomId}")
     public Result<List<AuctionItem>> getByRoom(@PathVariable Long roomId) {
@@ -59,7 +62,7 @@ public class AuctionItemController {
     }
 
     /**
-     * 开始拍品竞拍
+     * 开始拍品竞拍：更新拍品状态为活跃，允许用户开始出价
      */
     @PostMapping("/{id}/start")
     public Result<Void> start(@PathVariable Long id) {
@@ -75,7 +78,7 @@ public class AuctionItemController {
     }
 
     /**
-     * 对指定拍品出价，使用分布式锁和乐观锁防止并发问题
+     * 对拍品出价：使用分布式锁+乐观锁防止并发冲突，验证出价金额并更新当前价格
      */
     @PostMapping("/{id}/bid")
     public Result<AuctionItem> placeBid(

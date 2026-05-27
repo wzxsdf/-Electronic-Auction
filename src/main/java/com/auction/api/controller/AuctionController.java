@@ -7,6 +7,7 @@ import com.auction.domain.entity.Auction;
 import com.auction.domain.enums.AuctionStatus;
 import com.auction.repository.AuctionRepository;
 import com.auction.repository.ProductRepository;
+import com.auction.service.websocket.WsMessageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,9 +23,10 @@ public class AuctionController {
 
     private final AuctionRepository auctionRepository;
     private final ProductRepository productRepository;
+    private final WsMessageService wsMessageService;
 
     /**
-     * 创建新的竞拍活动
+     * 创建竞拍活动：验证商品和时间 → 初始化竞拍参数 → 保存为待开始状态
      */
     @PostMapping
     public Result<Auction> create(@Valid @RequestBody CreateAuctionRequest request) {
@@ -58,7 +60,7 @@ public class AuctionController {
     }
 
     /**
-     * 根据ID查询竞拍详情，包含关联商品信息
+     * 查询竞拍详情：根据ID获取竞拍信息并加载关联商品数据（名称、图片、描述）
      */
     @GetMapping("/{id}")
     public Result<Auction> getById(@PathVariable Long id) {
@@ -79,7 +81,7 @@ public class AuctionController {
     }
 
     /**
-     * 查询所有竞拍活动
+     * 查询所有竞拍活动：返回系统中全部竞拍记录，包含各种状态
      */
     @GetMapping
     public Result<List<Auction>> listAll() {
@@ -87,7 +89,7 @@ public class AuctionController {
     }
 
     /**
-     * 查询所有活跃状态的竞拍活动
+     * 查询活跃竞拍：返回正在进行中、可接受出价的竞拍活动列表
      */
     @GetMapping("/active")
     public Result<List<Auction>> listActive() {
@@ -95,7 +97,7 @@ public class AuctionController {
     }
 
     /**
-     * 开始竞拍活动
+     * 开始竞拍：更新状态为活跃 → 通过WebSocket通知所有用户竞拍已开始
      */
     @PostMapping("/{id}/start")
     public Result<Void> start(@PathVariable Long id) {
@@ -107,13 +109,14 @@ public class AuctionController {
         auction.setStatusEnum(AuctionStatus.ACTIVE);
         auctionRepository.updateById(auction);
 
-        // TODO: 发送 WebSocket 通知
+        // 发送 WebSocket 通知所有用户
+        wsMessageService.sendAuctionStarted(id);
         System.out.println("开始竞拍: auctionId=" + id);
         return Result.ok();
     }
 
     /**
-     * 取消竞拍活动
+     * 取消竞拍：更新状态为已取消 → 通过WebSocket通知所有用户并说明原因
      */
     @PostMapping("/{id}/cancel")
     public Result<Void> cancel(@PathVariable Long id, @RequestParam(required = false) String reason) {
@@ -125,6 +128,8 @@ public class AuctionController {
         auction.setStatusEnum(AuctionStatus.CANCELLED);
         auctionRepository.updateById(auction);
 
+        // 发送 WebSocket 通知所有用户
+        wsMessageService.sendAuctionCancelled(id, reason);
         System.out.println("取消竞拍: auctionId=" + id + ", reason=" + reason);
         return Result.ok();
     }

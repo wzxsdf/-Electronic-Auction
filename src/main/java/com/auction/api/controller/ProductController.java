@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 商品控制器：管理拍卖商品信息，提供商品创建、查询等功能
+ */
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
@@ -18,7 +21,7 @@ public class ProductController {
     private final ProductService productService;
 
     /**
-     * 创建新商品
+     * 创建商品：验证商品信息 → 保存商品数据 → 返回包含ID的商品信息
      */
     @PostMapping
     public Result<ProductResponse> create(@Valid @RequestBody CreateProductRequest request) {
@@ -26,7 +29,7 @@ public class ProductController {
     }
 
     /**
-     * 根据ID查询商品详情
+     * 查询商品详情：根据ID获取商品的完整信息（名称、图片、描述、分类）
      */
     @GetMapping("/{id}")
     public Result<ProductResponse> getById(@PathVariable Long id) {
@@ -34,7 +37,7 @@ public class ProductController {
     }
 
     /**
-     * 查询所有商品列表
+     * 查询所有商品：返回系统中所有可拍卖的商品列表
      */
     @GetMapping
     public Result<List<ProductResponse>> listAll() {
