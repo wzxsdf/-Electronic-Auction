@@ -30,6 +30,31 @@ public enum ErrorCode {
     USER_NOT_FOUND(3001, "用户不存在"),
     USER_BALANCE_INSUFFICIENT(3002, "余额不足"),
 
+    // 认证相关 3100-3199
+    USERNAME_ALREADY_EXISTS(3101, "用户名已存在"),
+    EMAIL_ALREADY_EXISTS(3102, "邮箱已存在"),
+    PHONE_ALREADY_EXISTS(3103, "手机号已存在"),
+    USERNAME_OR_PASSWORD_ERROR(3104, "用户名或密码错误"),
+    ACCOUNT_DISABLED(3105, "账户已被禁用"),
+    ACCOUNT_LOCKED(3106, "账户已被锁定"),
+    PASSWORD_STRENGTH_LOW(3107, "密码强度不足"),
+    OLD_PASSWORD_ERROR(3108, "原密码错误"),
+    PASSWORD_SAME_AS_OLD(3109, "新密码不能与原密码相同"),
+    PASSWORD_CONTAINS_USERNAME(3110, "密码不能包含用户名"),
+
+    // Token相关 3200-3299
+    TOKEN_INVALID(3201, "Token无效"),
+    TOKEN_EXPIRED(3202, "Token已过期"),
+    TOKEN_REFRESH_FAILED(3203, "Token刷新失败"),
+    TOKEN_NOT_FOUND(3204, "Token不存在"),
+
+    // 权限相关 3300-3399
+    PERMISSION_DENIED(3301, "权限不足"),
+    ROLE_NOT_FOUND(3302, "角色不存在"),
+    PERMISSION_NOT_FOUND(3303, "权限不存在"),
+    USER_ALREADY_HAS_ROLE(3304, "用户已拥有该角色"),
+    USER_DOES_NOT_HAVE_ROLE(3305, "用户未拥有该角色"),
+
     // 商品相关 4000-4999
     PRODUCT_NOT_FOUND(4001, "商品不存在"),
     PRODUCT_ALREADY_IN_AUCTION(4002, "商品已在竞拍中"),

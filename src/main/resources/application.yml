@@ -26,3 +26,16 @@ logging:
     com.baomidou.mybatisplus: DEBUG
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# JWT配置
+jwt:
+  # 密钥（生产环境请修改为复杂的随机字符串）
+  secret: auction-system-jwt-secret-key-change-in-production-environment-2026
+  # Access Token过期时间（毫秒）2小时
+  access-token-expiration: 7200000
+  # Refresh Token过期时间（毫秒）7天
+  refresh-token-expiration: 604800000
+  # Token前缀
+  token-prefix: "Bearer "
+  # Token请求头名称
+  token-header: Authorization
