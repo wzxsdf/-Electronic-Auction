@@ -3,11 +3,15 @@ package com.auction.api.controller;
 import com.auction.annotation.RateLimit;
 import com.auction.api.dto.request.ChangePasswordRequest;
 import com.auction.api.dto.request.UpdateUserRequest;
+import com.auction.api.dto.response.UserAuctionItemResponse;
 import com.auction.api.dto.response.UserResponse;
 import com.auction.common.Result;
 import com.auction.domain.enums.UserStatus;
+import com.auction.infrastructure.security.UserPrincipal;
+import com.auction.infrastructure.security.CurrentUser;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.auction.service.user.UserService;
+import com.auction.service.user.UserAuctionItemService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
+    private final UserAuctionItemService userAuctionItemService;
 
     /**
      * 查询用户信息（本人或管理员）
@@ -152,6 +157,42 @@ public class UserController {
     public Result<Void> deactivateAccount(@RequestHeader("X-User-Id") Long userId) {
         userService.deactivateAccount(userId);
         return Result.ok();
+    }
+
+    /**
+     * 查询用户参与拍品列表
+     * <p>
+     * 获取当前用户参与过的所有拍品信息，包括拍品详情、商品信息、所属拍卖活动（直播间）
+     * 支持按状态（已结束/未结束）和竞拍结果（拍中/未拍中）筛选
+     * <p>
+     * GET /users/auction-items
+     * <p>
+     * 限流：每分钟最多 20 次请求
+     *
+     * @param statusFilter    状态筛选：FINISHED（已结束）/ONGOING（未结束）/ALL（全部，默认）
+     * @param winStatusFilter 中标状态筛选：WON（拍中）/LOST（未拍中）/ALL（全部，默认）
+     * @param currentUser     当前登录用户
+     * @return 用户参与拍品响应列表
+     */
+    @GetMapping("/auction-items")
+    @RateLimit(key = "user_auction_items", time = 60, count = 20, message = "查询过于频繁，请稍后再试")
+    public Result<java.util.List<UserAuctionItemResponse>> getUserAuctionItems(
+            @RequestParam(required = false, defaultValue = "ALL") String statusFilter,
+            @RequestParam(required = false, defaultValue = "ALL") String winStatusFilter,
+            @CurrentUser UserPrincipal currentUser
+    ) {
+        try {
+            log.info("查询用户参与拍品: userId={}, statusFilter={}, winStatusFilter={}",
+                    currentUser.getUserId(), statusFilter, winStatusFilter);
+
+            java.util.List<UserAuctionItemResponse> items = userAuctionItemService
+                    .getUserParticipatedItems(currentUser.getUserId(), statusFilter, winStatusFilter);
+
+            return Result.ok(items);
+        } catch (Exception e) {
+            log.error("查询用户参与拍品失败：userId={}", currentUser.getUserId(), e);
+            return Result.fail(500, "查询失败: " + e.getMessage());
+        }
     }
 
     /**

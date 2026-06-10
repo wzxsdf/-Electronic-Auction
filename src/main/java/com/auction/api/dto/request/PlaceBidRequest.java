@@ -18,4 +18,10 @@ public class PlaceBidRequest {
     private BigDecimal amount;
 
     private Boolean isAutoBid = false;
+
+    /**
+     * 拍品ID（可选，用于多拍品拍卖）
+     * 如果不为空，则对指定拍品出价；否则对auctionId表示的拍品出价
+     */
+    private Long auctionItemId;
 }

@@ -107,4 +107,11 @@ public class DistributedLockService {
     public static String auctionLockKey(Long auctionId) {
         return "auction:update:lock:" + auctionId;
     }
+
+    /**
+     * 生成拍品出价的锁键
+     */
+    public static String auctionItemLockKey(Long auctionItemId) {
+        return "auction:item:bid:lock:" + auctionItemId;
+    }
 }

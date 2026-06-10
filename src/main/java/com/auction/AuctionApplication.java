@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@MapperScan("com.auction.infrastructure.mapper")
+@MapperScan({"com.auction.infrastructure.mapper", "com.auction.repository"})
 @EnableScheduling
 public class AuctionApplication {
 

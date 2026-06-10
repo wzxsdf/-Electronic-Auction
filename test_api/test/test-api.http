@@ -1,0 +1,489 @@
+### ================================================================================
+### 🎮 系统测试接口模块
+### ================================================================================
+### 功能：系统健康检查、功能测试、性能测试、压力测试等
+### 依赖：部分需要认证，大部分公开
+### 用途：开发调试、系统监控、问题诊断
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+
+### ================================================================================
+### 🏥 健康检查
+### ================================================================================
+
+### 1.1 基础健康检查
+GET {{baseUrl}}/actuator/health
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.status === "UP") {
+            client.log("✅ 系统健康状态：正常");
+        } else {
+            client.log("⚠️ 系统健康状态：" + body.status);
+        }
+    }
+%}
+
+### 1.2 详细健康检查
+GET {{baseUrl}}/actuator/health/detail
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 详细健康检查");
+        if (body.components) {
+            client.log("💾 数据库: " + body.components.db.status);
+            client.log("📡 Redis: " + body.components.redis.status);
+            client.log("📦 OSS: " + body.components.oss.status);
+        }
+    }
+%}
+
+### 1.3 存活检查
+GET {{baseUrl}}/actuator/health/liveness
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 存活检查通过");
+    }
+%}
+
+### 1.4 就绪检查
+GET {{baseUrl}}/actuator/health/readiness
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 就绪检查通过");
+    }
+%}
+
+### ================================================================================
+### 📊 系统信息
+### ================================================================================
+
+### 2.1 获取应用信息
+GET {{baseUrl}}/actuator/info
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 获取应用信息");
+        if (body.app) {
+            client.log("📦 应用名称: " + body.app.name);
+            client.log("📦 版本: " + body.app.version);
+            client.log("📦 描述: " + body.app.description);
+        }
+    }
+%}
+
+### 2.2 获取系统指标
+GET {{baseUrl}}/actuator/metrics
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 获取系统指标");
+        if (body.names && Array.isArray(body.names)) {
+            client.log("📊 可用指标数: " + body.names.length);
+        }
+    }
+%}
+
+### 2.3 获取JVM内存信息
+GET {{baseUrl}}/actuator/metrics/jvm.memory.used
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取JVM内存信息");
+    }
+%}
+
+### 2.4 获取CPU使用率
+GET {{baseUrl}}/actuator/metrics/process.cpu.usage
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取CPU使用率");
+    }
+%}
+
+### ================================================================================
+### 🧪 功能测试接口
+### ================================================================================
+
+### 3.1 测试数据库连接
+GET {{baseUrl}}/test/database
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 数据库连接正常");
+    } else {
+        client.log("❌ 数据库连接异常");
+    }
+%}
+
+### 3.2 测试Redis连接
+GET {{baseUrl}}/test/redis
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ Redis连接正常");
+    } else {
+        client.log("❌ Redis连接异常");
+    }
+%}
+
+### 3.3 测试OSS连接
+GET {{baseUrl}}/test/oss
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ OSS连接正常");
+    } else {
+        client.log("❌ OSS连接异常");
+    }
+%}
+
+### 3.4 测试JWT认证
+GET {{baseUrl}}/test/auth
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ JWT认证正常");
+    } else if (response.status === 401) {
+        client.log("⚠️ JWT认证需要Token");
+    }
+%}
+
+### 3.5 测试限流功能
+GET {{baseUrl}}/test/rate-limit
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 限流功能正常");
+    } else if (response.status === 429) {
+        client.log("⚠️ 触发限流");
+    }
+%}
+
+### ================================================================================
+### 🔥 性能测试
+### ================================================================================
+
+### 4.1 简单性能测试
+GET {{baseUrl}}/test/performance/simple
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 性能测试完成");
+        client.log("⏱️ 响应时间: " + body.data.responseTime + "ms");
+        client.log("📊 吞吐量: " + body.data.throughput + " req/s");
+    }
+%}
+
+### 4.2 数据库查询性能测试
+GET {{baseUrl}}/test/performance/database
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 数据库性能测试完成");
+    }
+%}
+
+### 4.3 并发测试
+GET {{baseUrl}}/test/performance/concurrent?users=100&requests=1000
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 并发测试完成");
+        client.log("👥 并发用户数: " + body.data.concurrentUsers);
+        client.log("📊 总请求数: " + body.data.totalRequests);
+        client.log("✅ 成功请求: " + body.data.successfulRequests);
+        client.log("❌ 失败请求: " + body.data.failedRequests);
+    }
+%}
+
+### ================================================================================
+### 📈 负载测试
+### ================================================================================
+
+### 5.1 CPU负载测试
+GET {{baseUrl}}/test/load/cpu?duration=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ CPU负载测试完成");
+    }
+%}
+
+### 5.2 内存负载测试
+GET {{baseUrl}}/test/load/memory?size=100
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 内存负载测试完成");
+    }
+%}
+
+### 5.3 IO负载测试
+GET {{baseUrl}}/test/load/io?files=100
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ IO负载测试完成");
+    }
+%}
+
+### ================================================================================
+### 🐛 调试接口
+### ================================================================================
+
+### 6.1 获取系统配置
+GET {{baseUrl}}/test/config
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取系统配置");
+    }
+%}
+
+### 6.2 获取环境变量
+GET {{baseUrl}}/test/env
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取环境变量");
+    }
+%}
+
+### 6.3 获取日志级别
+GET {{baseUrl}}/test/loggers
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取日志级别");
+    }
+%}
+
+### 6.4 设置日志级别（临时）
+POST {{baseUrl}}/test/loggers
+Content-Type: application/json
+
+{
+  "logger": "com.auction",
+  "level": "DEBUG"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 日志级别设置成功");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全测试
+### ================================================================================
+
+### 7.1 SQL注入测试
+GET {{baseUrl}}/test/security/sql-injection?input=test'; DROP TABLE users;--
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data.safe === true) {
+            client.log("✅ SQL注入防护正常");
+        } else {
+            client.log("❌ SQL注入防护异常");
+        }
+    }
+%}
+
+### 7.2 XSS攻击测试
+GET {{baseUrl}}/test/security/xss?input=<script>alert('XSS')</script>
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data.safe === true) {
+            client.log("✅ XSS防护正常");
+        } else {
+            client.log("❌ XSS防护异常");
+        }
+    }
+%}
+
+### 7.3 CSRF攻击测试
+GET {{baseUrl}}/test/security/csrf
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ CSRF防护检查完成");
+    }
+%}
+
+### ================================================================================
+### 📊 监控和统计
+### ================================================================================
+
+### 8.1 获取请求统计
+GET {{baseUrl}}/test/statistics/requests
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 获取请求统计");
+        client.log("📊 总请求数: " + body.data.totalRequests);
+        client.log("✅ 成功请求: " + body.data.successfulRequests);
+        client.log("❌ 失败请求: " + body.data.failedRequests);
+    }
+%}
+
+### 8.2 获取用户统计
+GET {{baseUrl}}/test/statistics/users
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取用户统计");
+    }
+%}
+
+### 8.3 获取拍卖统计
+GET {{baseUrl}}/test/statistics/auctions
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取拍卖统计");
+    }
+%}
+
+### ================================================================================
+### 🔄 缓存管理
+### ================================================================================
+
+### 9.1 清除所有缓存
+DELETE {{baseUrl}}/test/cache
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 清除缓存成功");
+    }
+%}
+
+### 9.2 清除指定缓存
+DELETE {{baseUrl}}/test/cache/products
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 清除商品缓存成功");
+    }
+%}
+
+### 9.3 预热缓存
+POST {{baseUrl}}/test/cache/warmup
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 缓存预热成功");
+    }
+%}
+
+### ================================================================================
+### 🧹 数据清理
+### ================================================================================
+
+### 10.1 清理测试数据（慎用！）
+POST {{baseUrl}}/test/cleanup/test-data
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 测试数据清理完成");
+    }
+%}
+
+### 10.2 重置序列（慎用！）
+POST {{baseUrl}}/test/cleanup/reset-sequences
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 序列重置完成");
+    }
+%}
+
+### ================================================================================
+### 📝 版本信息
+### ================================================================================
+
+### 11.1 获取API版本
+GET {{baseUrl}}/test/version
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 获取版本信息");
+        client.log("📦 版本: " + body.data.version);
+        client.log("🕐 构建时间: " + body.data.buildTime);
+        client.log("👤 提交者: " + body.data.committer);
+    }
+%}
+
+### 11.2 获取Git信息
+GET {{baseUrl}}/test/git
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取Git信息");
+    }
+%}
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 测试接口主要用于开发调试，生产环境应该禁用
+### 2. 性能测试和负载测试会影响系统性能，谨慎使用
+### 3. 数据清理操作不可逆，务必确认后再执行
+### 4. 部分测试接口需要管理员权限
+### 5. 日志级别修改只在当前会话有效
+### 6. 安全测试用于验证防护机制，不要用于恶意测试
+
+### ================================================================================
+### 🎯 测试场景推荐
+### ================================================================================
+
+### 日常检查：
+### 1. 健康检查 - 确认系统正常运行
+### 2. 数据库连接检查 - 确认数据库可用
+### 3. Redis连接检查 - 确认缓存可用
+
+### 性能优化：
+### 1. 性能测试 - 发现性能瓶颈
+### 2. 数据库性能测试 - 优化慢查询
+### 3. 并发测试 - 测试系统承载能力
+
+### 安全检查：
+### 1. SQL注入测试 - 验证防护机制
+### 2. XSS攻击测试 - 验证输入过滤
+### 3. CSRF测试 - 验证表单保护
+
+### 系统维护：
+### 1. 清理缓存 - 解决缓存问题
+### 2. 查看配置 - 确认系统设置
+### 3. 查看日志 - 排查系统问题
+
+### ================================================================================
+### ⚠️ 安全提醒
+### ================================================================================
+
+### 生产环境注意事项：
+### 1. 禁用或限制测试接口访问
+### 2. 使用防火墙限制测试接口访问
+### 3. 为测试接口添加额外的认证
+### 4. 定期检查测试接口访问日志
+### 5. 避免在高峰期执行性能和负载测试
+
+### ================================================================================

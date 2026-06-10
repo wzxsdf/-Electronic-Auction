@@ -1,0 +1,335 @@
+### ================================================================================
+### 🔐 认证模块接口测试
+### ================================================================================
+### 功能：用户注册、登录、登出、Token刷新等认证相关接口
+### 依赖：无需依赖（基础模块）
+### 说明：此模块的Token会被其他所有模块依赖
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+
+### ================================================================================
+### 📝 用户注册
+### ================================================================================
+
+### 1.1 普通用户注册
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "Test123456",
+  "email": "test@example.com",
+  "nickname": "测试用户"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 用户注册成功");
+    } else if (response.status === 400) {
+        client.log("⚠️ 用户可能已存在");
+    } else {
+        client.log("❌ 注册失败: " + response.body);
+    }
+%}
+
+### 1.2 商家用户注册
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "merchant1",
+  "password": "merchant123",
+  "email": "merchant@example.com",
+  "nickname": "测试商家"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 商家注册成功");
+    } else {
+        client.log("⚠️ 商家可能已存在");
+    }
+%}
+
+### 1.3 管理员用户注册
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "admin1",
+  "password": "admin123",
+  "email": "admin@example.com",
+  "nickname": "测试管理员"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 管理员注册成功");
+    } else {
+        client.log("⚠️ 管理员可能已存在");
+    }
+%}
+
+### ================================================================================
+### 🔑 用户登录
+### ================================================================================
+
+### 2.1 普通用户登录（获取Token）
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "Test123456"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.token) {
+            client.global.set("authToken", body.data.token);
+            client.log("✅ 用户登录成功");
+            client.log("🔑 Token: " + body.data.token.substring(0, 20) + "...");
+            if (body.data.user && body.data.user.id) {
+                client.global.set("currentUserId", body.data.user.id);
+                client.log("👤 用户ID: " + body.data.user.id);
+                client.log("👤 用户名: " + body.data.user.username);
+                client.log("👤 角色: " + body.data.user.role);
+            }
+        } else {
+            client.log("❌ 登录响应中没有找到token");
+        }
+    } else {
+        client.log("❌ 登录失败: " + response.body);
+    }
+%}
+
+### 2.2 商家用户登录（获取商家Token）
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "merchant1",
+  "password": "merchant123"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.token) {
+            client.global.set("merchantToken", body.data.token);
+            client.log("✅ 商家登录成功");
+            client.log("🔑 商家Token: " + body.data.token.substring(0, 20) + "...");
+            if (body.data.user && body.data.user.id) {
+                client.global.set("merchantId", body.data.user.id);
+                client.log("👤 商家ID: " + body.data.user.id);
+            }
+        }
+    } else {
+        client.log("❌ 商家登录失败");
+    }
+%}
+
+### 2.3 管理员登录（获取管理员Token）
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "admin1",
+  "password": "admin123"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.token) {
+            client.global.set("adminToken", body.data.token);
+            client.log("✅ 管理员登录成功");
+        }
+    }
+%}
+
+### 2.4 错误密码测试
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "wrongpassword"
+}
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 错误密码验证正常");
+    } else {
+        client.log("❌ 错误密码验证异常");
+    }
+%}
+
+### 2.5 用户不存在测试
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "nonexistuser",
+  "password": "test123456"
+}
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 用户不存在验证正常");
+    } else {
+        client.log("❌ 用户不存在验证异常");
+    }
+%}
+
+### ================================================================================
+### 👤 获取当前用户信息
+### ================================================================================
+
+### 3.1 获取当前用户信息（需要Token）
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 获取用户信息成功");
+        if (body.data) {
+            client.log("👤 用户名: " + body.data.username);
+            client.log("📧 邮箱: " + body.data.email);
+            client.log("🎭 角色: " + body.data.role);
+        }
+    } else {
+        client.log("❌ 获取用户信息失败");
+    }
+%}
+
+### 3.2 无Token访问测试（应该失败）
+GET {{baseUrl}}/auth/me
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 认证验证正常工作");
+    } else {
+        client.log("❌ 认证验证异常");
+    }
+%}
+
+### ================================================================================
+### 🔄 Token刷新
+### ================================================================================
+
+### 4.1 刷新Token
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.global.set("authToken", body.data);
+            client.log("✅ Token刷新成功");
+            client.log("🔑 新Token: " + body.data.substring(0, 20) + "...");
+        }
+    } else {
+        client.log("❌ Token刷新失败");
+    }
+%}
+
+### ================================================================================
+### 🚪 用户登出
+### ================================================================================
+
+### 5.1 用户登出
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 用户登出成功");
+    } else {
+        client.log("❌ 用户登出失败");
+    }
+%}
+
+### 5.2 无Token登出测试
+POST {{baseUrl}}/auth/logout
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 允许无Token登出（正常）");
+    } else {
+        client.log("⚠️ 无Token登出被拒绝");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全测试
+### ================================================================================
+
+### 6.1 限流测试 - 快速多次登录
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "password": "test123456"
+}
+
+### 6.2 参数注入测试
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "testuser'; DROP TABLE users; --",
+  "password": "test123456"
+}
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ SQL注入防护正常");
+    } else {
+        client.log("⚠️ SQL注入防护需要检查");
+    }
+%}
+
+### 6.3 XSS攻击测试
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser<script>alert('XSS')</script>",
+  "password": "test123456",
+  "email": "test@example.com"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ XSS防护正常");
+    } else {
+        client.log("⚠️ XSS防护需要检查");
+    }
+%}
+
+### ================================================================================
+### 📊 业务流程测试
+### ================================================================================
+
+### 7.1 完整认证流程
+### 步骤1：注册 → 步骤2：登录 → 步骤3：获取信息 → 步骤4：刷新Token → 步骤5：登出
+### 按顺序执行上述接口，验证完整认证流程
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 首次测试时先执行注册接口创建测试用户
+### 2. 登录成功后Token会自动保存供其他模块使用
+### 3. 测试失败时检查用户是否已存在或密码是否正确
+### 4. 商家Token用于商品和拍卖管理，普通Token用于出价和订单
+### 5. Token有效期通常为24小时，过期需重新登录
+
+### ================================================================================

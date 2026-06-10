@@ -1,0 +1,410 @@
+### ================================================================================
+### 🎵 拍卖管理模块接口测试
+### ================================================================================
+### 功能：创建拍卖、查询拍卖、开始拍卖、取消拍卖等
+### 依赖：需要商家Token和商品ID（auth + products模块）
+### 权限：商家/管理员
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@merchantToken = {{merchantToken}}
+@productId = {{productId}}
+@auctionId = {{auctionId}}
+
+### ================================================================================
+### 🆕 创建拍卖活动
+### ================================================================================
+
+### 1.1 创建标准拍卖活动
+POST {{baseUrl}}/auctions
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "productId": {{productId}},
+  "title": "iPhone 15 Pro Max 新机拍卖",
+  "startPrice": 8799.00,
+  "bidIncrement": 100.00,
+  "maxPrice": 15000.00,
+  "delaySeconds": 15,
+  "startTime": "2026-06-08T10:00:00",
+  "endTime": "2026-06-08T12:00:00"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.id) {
+            client.global.set("auctionId", body.data.id);
+            client.log("✅ 拍卖活动创建成功");
+            client.log("🎵 拍卖ID: " + body.data.id);
+            client.log("📦 商品ID: " + body.data.productId);
+            client.log("💰 起拍价: " + body.data.startPrice);
+            client.log("⏰ 开始时间: " + body.data.startTime);
+            client.log("⏰ 结束时间: " + body.data.endTime);
+        }
+    } else {
+        client.log("❌ 拍卖活动创建失败: " + response.body);
+    }
+%}
+
+### 1.2 创建奢侈品拍卖
+POST {{baseUrl}}/auctions
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "productId": 2,
+  "title": "LV限量版手提包拍卖",
+  "startPrice": 10000.00,
+  "bidIncrement": 500.00,
+  "maxPrice": 25000.00,
+  "delaySeconds": 10,
+  "startTime": "2026-06-08T14:00:00",
+  "endTime": "2026-06-08T16:00:00"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 奢侈品拍卖创建成功");
+    }
+%}
+
+### 1.3 创建艺术品拍卖
+POST {{baseUrl}}/auctions
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "productId": 3,
+  "title": "名家山水画拍卖",
+  "startPrice": 30000.00,
+  "bidIncrement": 1000.00,
+  "maxPrice": 80000.00,
+  "delaySeconds": 20,
+  "startTime": "2026-06-08T18:00:00",
+  "endTime": "2026-06-08T20:00:00"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 艺术品拍卖创建成功");
+    }
+%}
+
+### 1.4 错误测试 - 商品不存在
+POST {{baseUrl}}/auctions
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "productId": 99999,
+  "title": "不存在商品的拍卖",
+  "startPrice": 100.00,
+  "bidIncrement": 10.00,
+  "startTime": "2026-06-08T10:00:00",
+  "endTime": "2026-06-08T12:00:00"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 商品不存在验证正常");
+    } else {
+        client.log("❌ 商品不存在验证异常");
+    }
+%}
+
+### 1.5 错误测试 - 时间不合理（结束时间早于开始时间）
+POST {{baseUrl}}/auctions
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "productId": {{productId}},
+  "title": "时间错误的拍卖",
+  "startPrice": 1000.00,
+  "bidIncrement": 100.00,
+  "startTime": "2026-06-08T12:00:00",
+  "endTime": "2026-06-08T10:00:00"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 时间验证正常 - 结束时间不能早于开始时间");
+    } else {
+        client.log("❌ 时间验证异常");
+    }
+%}
+
+### ================================================================================
+### 🔍 查询拍卖活动
+### ================================================================================
+
+### 2.1 查询拍卖详情
+GET {{baseUrl}}/auctions/{{auctionId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询拍卖详情成功");
+            client.log("🎵 拍卖ID: " + body.data.id);
+            client.log("📝 标题: " + body.data.title);
+            client.log("💰 当前价格: " + body.data.currentPrice);
+            client.log("📊 状态: " + body.data.status);
+        }
+    } else {
+        client.log("❌ 查询拍卖详情失败");
+    }
+%}
+
+### 2.2 查询所有拍卖活动
+GET {{baseUrl}}/auctions
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询所有拍卖成功");
+            client.log("📊 拍卖数量: " + body.data.length);
+        }
+    }
+%}
+
+### 2.3 查询活跃拍卖（可出价）
+GET {{baseUrl}}/auctions/active
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询活跃拍卖成功");
+            client.log("📊 活跃拍卖数量: " + body.data.length);
+            body.data.forEach(function(auction) {
+                client.log("  - ID: " + auction.id + ", 标题: " + auction.title);
+            });
+        }
+    }
+%}
+
+### 2.4 查询待开始拍卖
+GET {{baseUrl}}/auctions?status=PENDING
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询待开始拍卖成功");
+    }
+%}
+
+### ================================================================================
+### ▶️ 拍卖控制操作
+### ================================================================================
+
+### 3.1 开始拍卖
+POST {{baseUrl}}/auctions/{{auctionId}}/start
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖开始成功");
+    } else {
+        client.log("❌ 拍卖开始失败");
+    }
+%}
+
+### 3.2 取消拍卖（有原因）
+POST {{baseUrl}}/auctions/{{auctionId}}/cancel?reason=商品质量问题，取消拍卖
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖取消成功");
+    } else {
+        client.log("❌ 拍卖取消失败");
+    }
+%}
+
+### 3.3 取消拍卖（无原因）
+POST {{baseUrl}}/auctions/{{auctionId}}/cancel
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖取消成功（无原因）");
+    }
+%}
+
+### 3.4 权限测试 - 普通用户尝试开始拍卖（应该失败）
+POST {{baseUrl}}/auctions/{{auctionId}}/start
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 权限验证正常 - 普通用户无法开始拍卖");
+    } else {
+        client.log("❌ 权限验证异常");
+    }
+%}
+
+### ================================================================================
+### 📊 拍卖统计查询
+### ================================================================================
+
+### 4.1 查询拍卖统计数据
+GET {{baseUrl}}/auctions/statistics
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 拍卖统计查询成功");
+        if (body.data) {
+            client.log("📊 总拍卖数: " + body.data.totalAuctions);
+            client.log("📊 活跃拍卖数: " + body.data.activeAuctions);
+        }
+    }
+%}
+
+### 4.2 按商品ID查询拍卖
+GET {{baseUrl}}/auctions?productId={{productId}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按商品查询拍卖成功");
+    }
+%}
+
+### 4.3 按状态查询拍卖
+GET {{baseUrl}}/auctions?status=ACTIVE
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按状态查询拍卖成功");
+    }
+%}
+
+### ================================================================================
+### 🕐 拍卖时间管理
+### ================================================================================
+
+### 5.1 查询即将开始的拍卖
+GET {{baseUrl}}/auctions/upcoming?hours=24
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询即将开始拍卖成功");
+    }
+%}
+
+### 5.2 查询即将结束的拍卖
+GET {{baseUrl}}/auctions/ending?hours=1
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询即将结束拍卖成功");
+    }
+%}
+
+### ================================================================================
+### 🔄 拍卖状态流转测试
+### ================================================================================
+
+### 6.1 完整状态流转：PENDING → ACTIVE → COMPLETED
+### 步骤1：创建拍卖（PENDING状态）
+### 步骤2：开始拍卖（变为ACTIVE状态）
+### 步骤3：等待拍卖结束或强制结束（变为COMPLETED状态）
+
+### 6.2 测试拍卖延迟结束功能
+### 创建一个设置延迟的拍卖，在最后时刻出价，观察是否自动延迟
+
+### ================================================================================
+### 🔒 安全和业务规则测试
+### ================================================================================
+
+### 7.1 测试已取消的拍卖不能开始
+POST {{baseUrl}}/auctions/{{auctionId}}/start
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    // 如果拍卖已取消，此操作应该失败
+    if (response.status === 400) {
+        client.log("✅ 已取消拍卖不能开始的验证正常");
+    } else {
+        client.log("⚠️ 需要检查已取消拍卖的业务规则");
+    }
+%}
+
+### 7.2 测试重复开始拍卖
+POST {{baseUrl}}/auctions/{{auctionId}}/start
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    // 如果拍卖已经是ACTIVE状态，重复开始应该被拒绝
+    if (response.status === 400) {
+        client.log("✅ 重复开始拍卖验证正常");
+    } else {
+        client.log("⚠️ 需要检查重复开始的业务规则");
+    }
+%}
+
+### 7.3 价格合理性测试
+POST {{baseUrl}}/auctions
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "productId": {{productId}},
+  "title": "价格为负的拍卖",
+  "startPrice": -100.00,
+  "bidIncrement": 10.00,
+  "startTime": "2026-06-08T10:00:00",
+  "endTime": "2026-06-08T12:00:00"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 负价格验证正常");
+    } else {
+        client.log("❌ 负价格验证异常");
+    }
+%}
+
+### ================================================================================
+### 📱 WebSocket通知测试
+### ================================================================================
+
+### 8.1 测试拍卖开始WebSocket通知
+### 执行开始拍卖接口后，检查WebSocket客户端是否收到通知
+### 预期：收到拍卖开始通知，包含auctionId和startTime信息
+
+### 8.2 测试拍卖取消WebSocket通知
+### 执行取消拍卖接口后，检查WebSocket客户端是否收到通知
+### 预期：收到拍卖取消通知，包含auctionId和取消原因
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 确保已执行auth模块的商家登录，获取merchantToken
+### 2. 确保已创建商品，获得productId
+### 3. 拍卖创建成功后，auctionId会自动保存供出价模块使用
+### 4. 只有ACTIVE状态的拍卖才能接受出价
+### 5. 拍卖时间设置要合理，结束时间必须晚于开始时间
+### 6. 延迟结束功能：在拍卖结束前有出价，会自动延迟指定秒数
+
+### ================================================================================
+### 📋 完整业务流程
+### ================================================================================
+
+### 完整拍卖流程：
+### 1. 创建拍卖（PENDING状态）
+### 2. 查询拍卖详情
+### 3. 开始拍卖（变为ACTIVE状态）
+### 4. 用户可以开始出价（见bids模块）
+### 5. 拍卖结束（变为COMPLETED状态）
+### 6. 生成订单（见orders模块）
+
+### 测试建议：
+### 先创建一个测试拍卖，手动控制时间变化，观察状态流转
+### 使用WebSocket客户端监听实时通知
+
+### ================================================================================

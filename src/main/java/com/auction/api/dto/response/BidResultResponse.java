@@ -35,19 +35,28 @@ public class BidResultResponse {
     private Boolean isLeading;
 
     /**
-     * 距离结束剩余毫秒数
+     * 结束时间（ISO 8601格式）
+     * 前端应基于此绝对时间计算剩余时间
      */
+    private String endTime;
+
+    /**
+     * 结束时间戳（毫秒）
+     * 推荐使用 endTime 字段
+     */
+    private Long endTimeTimestamp;
+
+    /**
+     * 距离结束剩余毫秒数（已废弃）
+     * @deprecated 使用 endTime 字段代替
+     */
+    @Deprecated
     private Long remainingMs;
 
     /**
      * 拍卖是否被延长
      */
     private Boolean wasExtended;
-
-    /**
-     * 新的结束时间戳（秒）
-     */
-    private Integer newEndTime;
 
     /**
      * 提示消息

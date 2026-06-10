@@ -1,0 +1,369 @@
+### ================================================================================
+### 🏠 拍卖房间模块接口测试
+### ================================================================================
+### 功能：拍卖房间管理、实时竞价、WebSocket通信等
+### 依赖：需要拍卖ID（auctions模块）
+### 权限：大部分公开，部分操作需要认证
+### 特点：支持WebSocket实时通信
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+@auctionId = {{auctionId}}
+
+### ================================================================================
+### 🔍 查询拍卖房间
+### ================================================================================
+
+### 1.1 查询拍卖房间详情
+GET {{baseUrl}}/auction-rooms/{{auctionId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询拍卖房间详情成功");
+            client.log("🏠 房间ID: " + body.data.id);
+            client.log("🎵 拍卖ID: " + body.data.auctionId);
+            client.log("👥 在线人数: " + body.data.onlineCount);
+            client.log("📊 房间状态: " + body.data.status);
+        }
+    } else {
+        client.log("❌ 查询拍卖房间详情失败");
+    }
+%}
+
+### 1.2 查询活跃拍卖房间
+GET {{baseUrl}}/auction-rooms/active
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询活跃房间成功");
+            client.log("📊 活跃房间数: " + body.data.length);
+            body.data.forEach(function(room) {
+                client.log("🏠 房间 " + room.id + ": " + room.onlineCount + "人在线");
+            });
+        }
+    }
+%}
+
+### 1.3 查询房间列表（分页）
+GET {{baseUrl}}/auction-rooms?page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询房间列表成功");
+    }
+%}
+
+### ================================================================================
+### 🎮 房间操作
+### ================================================================================
+
+### 2.1 进入拍卖房间
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/join
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 进入拍卖房间成功");
+            client.log("🏠 房间ID: " + body.data.roomId);
+            client.log("👤 用户ID: " + body.data.userId);
+            client.log("🔑 WebSocket URL: " + body.data.wsUrl);
+        }
+    } else {
+        client.log("❌ 进入拍卖房间失败");
+    }
+%}
+
+### 2.2 离开拍卖房间
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/leave
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 离开拍卖房间成功");
+    }
+%}
+
+### 2.3 获取房间在线用户列表
+GET {{baseUrl}}/auction-rooms/{{auctionId}}/users
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 获取在线用户列表成功");
+            client.log("👥 在线用户数: " + body.data.length);
+            body.data.forEach(function(user) {
+                client.log("👤 " + user.nickname + " (" + user.role + ")");
+            });
+        }
+    }
+%}
+
+### ================================================================================
+### 💬 房间消息
+### ================================================================================
+
+### 3.1 发送房间消息
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/messages
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "messageType": "CHAT",
+  "content": "大家好，这个商品很棒！"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 发送房间消息成功");
+    }
+%}
+
+### 3.2 查询房间消息历史
+GET {{baseUrl}}/auction-rooms/{{auctionId}}/messages?limit=50
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询消息历史成功");
+            client.log("📊 消息数量: " + body.data.length);
+        }
+    }
+%}
+
+### 3.3 获取房间最新消息
+GET {{baseUrl}}/auction-rooms/{{auctionId}}/messages/latest
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取最新消息成功");
+    }
+%}
+
+### ================================================================================
+### 🔔 房间通知
+### ================================================================================
+
+### 4.1 订阅房间通知
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/subscribe
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "notificationTypes": ["BID_PLACED", "PRICE_CHANGED", "AUCTION_ENDING"]
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 订阅房间通知成功");
+    }
+%}
+
+### 4.2 取消订阅房间通知
+DELETE {{baseUrl}}/auction-rooms/{{auctionId}}/subscribe
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 取消订阅成功");
+    }
+%}
+
+### 4.3 获取房间通知设置
+GET {{baseUrl}}/auction-rooms/{{auctionId}}/notifications
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取通知设置成功");
+    }
+%}
+
+### ================================================================================
+### 📊 房间统计
+### ================================================================================
+
+### 5.1 获取房间实时统计
+GET {{baseUrl}}/auction-rooms/{{auctionId}}/statistics
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 获取房间统计成功");
+            client.log("👥 在线人数: " + body.data.onlineCount);
+            client.log("💰 当前价格: " + body.data.currentPrice);
+            client.log("📊 出价次数: " + body.data.bidCount);
+            client.log("👥 参与人数: " + body.data.participantCount);
+        }
+    }
+%}
+
+### 5.2 获取房间热度排行
+GET {{baseUrl}}/auction-rooms/hot?limit=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取房间热度排行成功");
+    }
+%}
+
+### ================================================================================
+### 🎯 房间管理
+### ================================================================================
+
+### 6.1 房主踢人（需要房主权限）
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/kick
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "userId": 123,
+  "reason": "违规发言"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 踢出用户成功");
+    } else if (response.status === 403) {
+        client.log("⚠️ 需要房主权限");
+    }
+%}
+
+### 6.2 房主禁言（需要房主权限）
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/mute
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "userId": 123,
+  "duration": 10,
+  "reason": "刷屏"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 禁言用户成功");
+    }
+%}
+
+### 6.3 解除禁言
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/unmute
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "userId": 123
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 解除禁言成功");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全测试
+### ================================================================================
+
+### 7.1 测试未授权进入房间
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/join
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 未授权进入房间验证正常");
+    } else {
+        client.log("❌ 未授权进入房间验证异常");
+    }
+%}
+
+### 7.2 测试重复进入房间
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/join
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200 || response.status === 400) {
+        client.log("✅ 重复进入房间处理正常");
+    }
+%}
+
+### 7.3 测试恶意消息内容
+POST {{baseUrl}}/auction-rooms/{{auctionId}}/messages
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "messageType": "CHAT",
+  "content": "<script>alert('XSS')</script>"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 恶意内容过滤正常");
+    } else {
+        client.log("⚠️ 恶意内容过滤需要加强");
+    }
+%}
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 拍卖房间支持WebSocket，建议使用WebSocket客户端测试
+### 2. 房间消息有类型分类：CHAT、BID、SYSTEM等
+### 3. 在线人数是实时统计的
+### 4. 房主权限通常是拍卖创建者或管理员
+### 5. 禁言和踢人功能需要有权限验证
+### 6. 房间通知可以按类型订阅
+
+### ================================================================================
+### 🌐 WebSocket连接测试
+### ================================================================================
+
+### WebSocket连接URL：
+### ws://localhost:8080/ws/auction/{{auctionId}}?token={{authToken}}
+
+### WebSocket消息格式：
+### {
+###   "type": "BID",
+###   "data": {
+###     "auctionId": 1,
+###     "userId": 123,
+###     "amount": 9000.00,
+###     "timestamp": "2026-06-08T10:30:00"
+###   }
+### }
+
+### 客户端可以使用以下工具测试：
+### 1. 在线WebSocket测试工具：http://www.websocket-test.com/
+### 2. 浏览器Console：new WebSocket('ws://...')
+### 3. 专门的WebSocket客户端应用
+
+### ================================================================================
+### 📋 完整房间流程
+### ================================================================================
+
+### 标准流程：
+### 1. 查询房间详情
+### 2. 进入房间（获取WebSocket URL）
+### 3. 建立WebSocket连接
+### 4. 接收房间消息和通知
+### 5. 发送聊天消息
+### 6. 参与竞价
+### 7. 离开房间
+
+### 管理流程：
+### 1. 房主管理房间用户
+### 2. 踢出违规用户
+### 3. 禁言刷屏用户
+### 4. 设置房间公告
+### 5. 查看房间统计
+
+### ================================================================================

@@ -30,11 +30,22 @@ public enum MessageType {
     YOU_WERE_OVERTAKEN("你被超越了"),
     YOU_LOST("很遗憾，您未成交"),
     YOU_WON("恭喜您竞拍成功"),
+    AUCTION_STARTED_FOLLOWER("您关注的拍卖活动已开始"),
 
     // 支付相关
     PAYMENT_SUCCESS("支付成功"),
     PAYMENT_CANCELLED("支付取消"),
     PAYMENT_FAILED("支付失败"),
+
+    // 直播间相关
+    CHAT_MESSAGE("聊天消息"),
+    CHAT_HISTORY("聊天历史记录"),
+    SYSTEM_MESSAGE("系统消息"),
+    USER_JOIN("用户加入直播间"),
+    USER_LEAVE("用户离开直播间"),
+    USER_LIST_UPDATE("用户列表更新"),
+    ONLINE_COUNT_UPDATE("在线人数更新"),
+    ALL_ITEMS_UPDATE("所有拍品状态更新"),
 
     ERROR("错误消息");
 

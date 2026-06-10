@@ -66,7 +66,7 @@ public class OrderRepository {
     public Order findByAuctionId(Long auctionId) {
         return orderMapper.selectOne(
             new LambdaQueryWrapper<Order>()
-                .eq(Order::getItemId, auctionId)
+                .eq(Order::getAuctionItemId, auctionId)
                 .last("LIMIT 1")
         );
     }

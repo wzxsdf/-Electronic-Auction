@@ -1,0 +1,544 @@
+### ================================================================================
+### 📋 订单管理模块接口测试
+### ================================================================================
+### 功能：订单查询、状态更新、订单取消、订单统计等
+### 依赖：需要用户Token和拍卖结果（auth + auctions + bids模块）
+### 权限：订单所有者或管理员
+### 业务流程：拍卖结束 → 生成订单 → 支付订单 → 完成交易
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+@currentUserId = {{currentUserId}}
+@auctionId = {{auctionId}}
+@orderId = {{orderId}}
+
+### ================================================================================
+### 🔍 查询订单详情
+### ================================================================================
+
+### 1.1 查询指定订单详情
+GET {{baseUrl}}/orders/{{orderId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询订单详情成功");
+            client.log("📋 订单ID: " + body.data.id);
+            client.log("🎵 拍卖ID: " + body.data.auctionId);
+            client.log("👤 买家ID: " + body.data.buyerId);
+            client.log("💰 订单金额: " + body.data.amount);
+            client.log("📊 订单状态: " + body.data.status);
+            client.log("🕐 创建时间: " + body.data.createdAt);
+        }
+    } else if (response.status === 404) {
+        client.log("⚠️ 订单不存在");
+    } else {
+        client.log("❌ 查询订单详情失败");
+    }
+%}
+
+### 1.2 错误测试 - 查询不存在的订单
+GET {{baseUrl}}/orders/99999
+
+> {%
+    if (response.status === 404) {
+        client.log("✅ 订单不存在验证正常");
+    } else {
+        client.log("❌ 订单不存在验证异常");
+    }
+%}
+
+### 1.3 错误测试 - 无效订单ID格式
+GET {{baseUrl}}/orders/abc
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 订单ID格式验证正常");
+    } else {
+        client.log("❌ 订单ID格式验证异常");
+    }
+%}
+
+### ================================================================================
+### 👥 查询用户订单
+### ================================================================================
+
+### 2.1 查询当前用户的所有订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询用户订单成功");
+            client.log("📊 订单数量: " + body.data.length);
+            body.data.forEach(function(order) {
+                client.log("📋 订单 " + order.id + ": " + order.status + " - " + order.amount);
+            });
+        }
+    } else {
+        client.log("❌ 查询用户订单失败");
+    }
+%}
+
+### 2.2 查询用户订单（分页）
+GET {{baseUrl}}/orders/user/{{currentUserId}}?page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 分页查询订单成功");
+    }
+%}
+
+### 2.3 按状态查询用户订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}/status/PENDING_PAYMENT
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 按状态查询订单成功");
+            client.log("📊 待支付订单数: " + body.data.length);
+        }
+    }
+%}
+
+### 2.4 查询已支付订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}/status/PAID
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询已支付订单成功");
+    }
+%}
+
+### 2.5 查询已完成订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}/status/COMPLETED
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询已完成订单成功");
+    }
+%}
+
+### 2.6 查询已取消订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}/status/CANCELLED
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询已取消订单成功");
+    }
+%}
+
+### ================================================================================
+### 🎵 查询拍卖相关订单
+### ================================================================================
+
+### 3.1 查询指定拍卖的订单
+GET {{baseUrl}}/orders/auction/{{auctionId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询拍卖订单成功");
+            client.log("📊 订单数量: " + body.data.length);
+            if (body.data.length > 0) {
+                client.log("📋 订单ID: " + body.data[0].id);
+                client.log("👤 买家: " + body.data[0].buyerId);
+                client.log("💰 金额: " + body.data[0].amount);
+            }
+        }
+    } else {
+        client.log("❌ 查询拍卖订单失败");
+    }
+%}
+
+### 3.2 查询不存在拍卖的订单
+GET {{baseUrl}}/orders/auction/99999
+
+> {%
+    if (response.status === 404) {
+        client.log("✅ 拍卖不存在验证正常");
+    } else {
+        client.log("⚠️ 拍卖不存在验证需要检查");
+    }
+%}
+
+### ================================================================================
+### 🔄 订单状态更新
+### ================================================================================
+
+### 4.1 更新订单状态为已支付
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "PAID"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 订单状态更新成功");
+    } else {
+        client.log("❌ 订单状态更新失败");
+    }
+%}
+
+### 4.2 更新订单状态为已完成
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 订单状态更新成功");
+    }
+%}
+
+### 4.3 错误测试 - 无效状态
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "INVALID_STATUS"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 状态验证正常 - 无效状态");
+    } else {
+        client.log("❌ 状态验证异常");
+    }
+%}
+
+### 4.4 错误测试 - 状态流转不符合规则
+### 比如从CANCELLED直接跳到COMPLETED
+PUT {{baseUrl}}/orders/{{orderId}}/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "COMPLETED"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 状态流转验证正常");
+    } else {
+        client.log("⚠️ 状态流转验证需要检查");
+    }
+%}
+
+### ================================================================================
+### ❌ 取消订单
+### ================================================================================
+
+### 5.1 取消待支付订单
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "reason": "不想要了"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 订单取消成功");
+    } else {
+        client.log("❌ 订单取消失败");
+    }
+%}
+
+### 5.2 取消订单（无原因）
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 订单取消成功（无原因）");
+    }
+%}
+
+### 5.3 错误测试 - 取消已支付订单
+### （假设订单ID为orderId的订单状态为PAID）
+POST {{baseUrl}}/orders/{{orderId}}/cancel
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "reason": "想取消已支付订单"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 已支付订单取消验证正常");
+    } else {
+        client.log("⚠️ 已支付订单取消验证需要检查");
+    }
+%}
+
+### 5.4 错误测试 - 取消他人订单
+POST {{baseUrl}}/orders/1/cancel
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "reason": "尝试取消他人订单"
+}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 权限验证正常 - 不能取消他人订单");
+    } else {
+        client.log("❌ 权限验证异常");
+    }
+%}
+
+### ================================================================================
+### 📊 订单统计信息
+### ================================================================================
+
+### 6.1 获取用户订单统计
+GET {{baseUrl}}/orders/user/{{currentUserId}}/statistics
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 获取订单统计成功");
+            client.log("📊 总订单数: " + body.data.totalOrders);
+            client.log("💰 总消费金额: " + body.data.totalAmount);
+            client.log("⏳ 待支付: " + body.data.pendingPayment);
+            client.log("✅ 已完成: " + body.data.completed);
+            client.log("❌ 已取消: " + body.data.cancelled);
+        }
+    } else {
+        client.log("❌ 获取订单统计失败");
+    }
+%}
+
+### 6.2 获取平台订单统计（管理员）
+GET {{baseUrl}}/orders/statistics
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取平台订单统计成功");
+    } else if (response.status === 403) {
+        client.log("⚠️ 需要管理员权限");
+    }
+%}
+
+### ================================================================================
+### 🔄 订单重新生成
+### ================================================================================
+
+### 7.1 重新生成已取消的订单
+POST {{baseUrl}}/orders/{{orderId}}/regenerate
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.newOrderId) {
+            client.log("✅ 订单重新生成成功");
+            client.log("📋 新订单ID: " + body.data.newOrderId);
+        }
+    } else if (response.status === 400) {
+        client.log("⚠️ 订单状态不允许重新生成");
+    }
+%}
+
+### ================================================================================
+### 💳 支付相关接口
+### ================================================================================
+
+### 8.1 获取订单支付信息
+GET {{baseUrl}}/orders/{{orderId}}/payment
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 获取支付信息成功");
+            client.log("💰 应付金额: " + body.data.amount);
+            client.log("🕐 过期时间: " + body.data.expireTime);
+            client.log("📝 支付方式: " + body.data.paymentMethods);
+        }
+    }
+%}
+
+### 8.2 创建支付
+POST {{baseUrl}}/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "orderId": {{orderId}},
+  "paymentMethod": "ALIPAY",
+  "amount": 8899.00
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 创建支付成功");
+            client.log("💳 支付ID: " + body.data.paymentId);
+            client.log("🔗 支付URL: " + body.data.paymentUrl);
+        }
+    } else {
+        client.log("❌ 创建支付失败");
+    }
+%}
+
+### ================================================================================
+### 🔍 订单搜索和筛选
+### ================================================================================
+
+### 9.1 按时间范围查询订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}?startDate=2026-06-01&endDate=2026-06-30
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按时间范围查询订单成功");
+    }
+%}
+
+### 9.2 按金额范围查询订单
+GET {{baseUrl}}/orders/user/{{currentUserId}}?minAmount=1000&maxAmount=10000
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按金额范围查询订单成功");
+    }
+%}
+
+### 9.3 搜索订单（按商品名称）
+GET {{baseUrl}}/orders/user/{{currentUserId}}?keyword=iPhone
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 搜索订单成功");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全和权限测试
+### ================================================================================
+
+### 10.1 未登录访问订单（应该失败）
+GET {{baseUrl}}/orders/{{orderId}}
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 未登录访问订单验证正常");
+    } else {
+        client.log("❌ 未登录访问订单验证异常");
+    }
+%}
+
+### 10.2 查询他人订单（应该失败）
+GET {{baseUrl}}/orders/user/999
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 查询他人订单权限验证正常");
+    } else {
+        client.log("❌ 查询他人订单权限验证异常");
+    }
+%}
+
+### 10.3 修改他人订单状态（应该失败）
+PUT {{baseUrl}}/orders/1/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "status": "CANCELLED"
+}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 修改他人订单权限验证正常");
+    } else {
+        client.log("❌ 修改他人订单权限验证异常");
+    }
+%}
+
+### ================================================================================
+### 📋 订单状态流转测试
+### ================================================================================
+
+### 11.1 完整状态流转测试
+### PENDING_PAYMENT → PAID → SHIPPED → COMPLETED
+
+### 步骤1：创建订单（PENDING_PAYMENT状态）
+### 步骤2：支付订单（变为PAID状态）
+### 步骤3：发货（变为SHIPPED状态）
+### 步骤4：确认收货（变为COMPLETED状态）
+
+### 11.2 取消流程测试
+### PENDING_PAYMENT → CANCELLED
+
+### 步骤1：创建订单
+### 步骤2：取消订单
+### 验证：订单状态变为CANCELLED
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 确保已执行auth模块的用户登录，获取authToken
+### 2. 订单通常在拍卖结束后自动生成，或者手动创建测试订单
+### 3. 订单状态流转需要遵循业务规则，不能随意跳转
+### 4. 用户只能查询和操作自己的订单（管理员除外）
+### 5. 已支付订单通常不能取消，需要走退款流程
+### 6. 支付模块需要集成第三方支付，注意支付过期时间
+
+### ================================================================================
+### 📋 完整订单流程
+### ================================================================================
+
+### 完整交易流程：
+### 1. 参与拍卖并获胜（见bids模块）
+### 2. 拍卖结束，系统生成订单（PENDING_PAYMENT状态）
+### 3. 用户查询订单，查看详细信息
+### 4. 用户创建支付，完成支付
+### 5. 订单状态更新为PAID
+### 6. 商家发货，状态更新为SHIPPED
+### 7. 用户确认收货，状态更新为COMPLETED
+### 8. 交易完成
+
+### 订单异常流程：
+### 1. 用户不支付，订单超时自动取消
+### 2. 用户主动取消订单（待支付状态）
+### 3. 支付失败，订单处理
+### 4. 退款处理
+
+### ================================================================================
+### 🎯 订单业务场景
+### ================================================================================
+
+### 场景1：正常交易
+### 拍卖获胜 → 生成订单 → 支付 → 发货 → 完成
+
+### 场景2：取消交易
+### 拍卖获胜 → 生成订单 → 用户取消
+
+### 场景3：超时未支付
+### 拍卖获胜 → 生成订单 → 超时自动取消
+
+### 场景4：部分退款
+### 拍卖获胜 → 生成订单 → 支付 → 部分退款 → 订单完成
+
+### ================================================================================

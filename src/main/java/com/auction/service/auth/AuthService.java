@@ -8,10 +8,13 @@ import com.auction.common.ErrorCode;
 import com.auction.domain.entity.LoginLog;
 import com.auction.domain.entity.Role;
 import com.auction.domain.entity.User;
+import com.auction.domain.entity.UserRole;
 import com.auction.domain.enums.LoginStatus;
 import com.auction.domain.enums.LoginType;
+import com.auction.domain.enums.RoleCode;
 import com.auction.domain.enums.UserStatus;
 import com.auction.repository.LoginLogRepository;
+import com.auction.repository.RoleRepository;
 import com.auction.repository.UserRepository;
 import com.auction.repository.UserRoleRepository;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +38,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final UserRoleRepository userRoleRepository;
+    private final RoleRepository roleRepository;
     private final LoginLogRepository loginLogRepository;
     private final JwtService jwtService;
     private final StringRedisTemplate redisTemplate;
@@ -91,10 +95,18 @@ public class AuthService {
         // 7. 保存用户
         user = userRepository.save(user);
 
-        // 8. 分配默认角色（普通用户）
-        assignDefaultRole(user.getId());
+        // 8. 根据请求分配角色
+        RoleCode roleCode = request.getRoleType() != null ? request.getRoleType() : RoleCode.USER;
 
-        log.info("用户注册成功: userId={}, username={}", user.getId(), user.getUsername());
+        // 9. 验证角色类型（不允许直接注册管理员和主播）
+        if (roleCode == RoleCode.ADMIN || roleCode == RoleCode.STREAMER) {
+            throw new AuthException(ErrorCode.BAD_REQUEST, "不允许直接注册该角色");
+        }
+
+        // 10. 分配角色
+        assignRole(user.getId(), roleCode);
+
+        log.info("用户注册成功: userId={}, username={}, role={}", user.getId(), user.getUsername(), roleCode);
         return user;
     }
 
@@ -336,13 +348,24 @@ public class AuthService {
     }
 
     /**
-     * 分配默认角色
+     * 分配角色
      */
-    private void assignDefaultRole(Long userId) {
-        // 这里假设ROLE_USER的角色ID为4（根据初始化数据）
-        // 实际应用中应该通过RoleRepository查询
-        // 简化处理：直接使用USER角色
-        // TODO: 实现角色分配逻辑
+    private void assignRole(Long userId, RoleCode roleCode) {
+        // 1. 查询角色
+        Role role = roleRepository.findByCode(roleCode);
+        if (role == null) {
+            throw new AuthException(ErrorCode.BAD_REQUEST, "角色不存在: " + roleCode);
+        }
+
+        // 2. 创建用户-角色关联
+        UserRole userRole = new UserRole();
+        userRole.setUserId(userId);
+        userRole.setRoleId(role.getId());
+
+        // 3. 保存关联
+        userRoleRepository.save(userRole);
+
+        log.info("角色分配成功: userId={}, roleId={}, roleCode={}", userId, role.getId(), roleCode);
     }
 
     /**

@@ -29,6 +29,11 @@ public class BidHistoryResponse {
     private Long auctionId;
 
     /**
+     * 拍品ID
+     */
+    private Long auctionItemId;
+
+    /**
      * 用户ID
      */
     private Long userId;

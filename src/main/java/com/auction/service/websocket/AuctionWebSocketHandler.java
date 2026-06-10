@@ -21,32 +21,24 @@ public class AuctionWebSocketHandler extends TextWebSocketHandler {
         this.roomManager = roomManager;
     }
 
+    /**
+     * WebSocket连接建立后的处理
+     */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        // 从 URI 路径中提取 ID
-        // 支持: /ws/item/{itemId} 或 /ws/room/{roomId}
+        // 从 URI 路径中提取拍品ID
+        // 连接格式: /api/ws/item/{itemId}?userId={userId}
         String uri = session.getUri().getPath();
         String[] parts = uri.split("/");
-        String idStr = null;
-        String type = null;
 
-        for (int i = 0; i < parts.length; i++) {
-            if ("item".equals(parts[i]) || ("room".equals(parts[i]))) {
-                type = parts[i];
-                if (i + 1 < parts.length) {
-                    idStr = parts[i + 1];
-                }
-                break;
-            }
-        }
-
-        if (idStr == null) {
-            log.warn("无法从 URI 中提取 ID: uri={}", uri);
+        if (parts.length < 5 || !"item".equals(parts[3])) {
+            log.warn("无效的URI格式: uri={}, 期望格式: /api/ws/item/{{itemId}}?userId={{userId}}", uri);
             session.close();
             return;
         }
 
-        Long id = Long.parseLong(idStr);
+        String itemIdStr = parts[4];
+        Long itemId = Long.parseLong(itemIdStr);
         Long userId = extractUserId(session);
 
         if (userId == null) {
@@ -55,13 +47,23 @@ public class AuctionWebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        log.info("WebSocket 连接建立: type={}, id={}, userId={}, sessionId={}", type, id, userId, session.getId());
+        // 🎉 拍品详情页 WebSocket 连接建立
+        log.info("🔗 [拍品WebSocket] 新连接建立");
+        log.info("  └─ 拍品ID: {}", itemId);
+        log.info("  └─ 用户ID: {}", userId);
+        log.info("  └─ 会话ID: {}", session.getId());
+        log.info("  └─ 房间KEY: item:{}", itemId);
+        log.info("  └─ 连接时间: {}", java.time.LocalDateTime.now());
+        log.info("====================================");
 
-        // 根据类型加入不同的房间
-        String roomKey = type + ":" + id;
+        // 统一使用 "item:" + itemId 格式作为roomKey
+        String roomKey = "item:" + itemId;
         roomManager.joinRoom(roomKey, session, userId);
     }
 
+    /**
+     * 处理WebSocket文本消息
+     */
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
@@ -78,17 +80,38 @@ public class AuctionWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    /**
+     * WebSocket连接关闭后的处理
+     */
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+        log.info("🔌 [拍品WebSocket] 连接关闭");
+        log.info("  └─ 会话ID: {}", session.getId());
+        log.info("  └─ 关闭代码: {}", status.getCode());
+        log.info("  └─ 关闭原因: {}", status.getReason());
+        log.info("  └─ 关闭时间: {}", java.time.LocalDateTime.now());
+        log.info("====================================");
+
         roomManager.leaveRoom(session);
     }
 
+    /**
+     * 处理WebSocket传输错误
+     */
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) throws Exception {
-        log.error("WebSocket 传输错误: sessionId={}", session.getId(), exception);
+        log.error("❌ [拍品WebSocket] 传输错误");
+        log.error("  └─ 会话ID: {}", session.getId());
+        log.error("  └─ 错误信息: {}", exception.getMessage());
+        log.error("  └─ 错误时间: {}", java.time.LocalDateTime.now());
+        log.error("====================================");
+
         roomManager.leaveRoom(session);
     }
 
+    /**
+     * 从WebSocket会话中提取用户ID
+     */
     private Long extractUserId(WebSocketSession session) {
         String query = session.getUri().getQuery();
         if (query != null && query.contains("userId=")) {

@@ -1,17 +1,17 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : xxx
+ Source Server         : weizixuan
  Source Server Type    : MySQL
- Source Server Version : 80036
+ Source Server Version : 80033 (8.0.33)
  Source Host           : localhost:3306
  Source Schema         : auction
 
  Target Server Type    : MySQL
- Target Server Version : 80036
+ Target Server Version : 80033 (8.0.33)
  File Encoding         : 65001
 
- Date: 23/05/2026 20:14:18
+ Date: 09/06/2026 02:30:54
 */
 
 SET NAMES utf8mb4;
@@ -22,472 +22,375 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- ----------------------------
 DROP TABLE IF EXISTS `auction_items`;
 CREATE TABLE `auction_items`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '竞拍项ID',
   `version` int NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
-  `room_id` bigint NOT NULL,
-  `product_id` bigint NOT NULL,
-  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `start_price` decimal(10, 2) NOT NULL DEFAULT 0.00,
-  `bid_increment` decimal(10, 2) NOT NULL,
-  `max_price` decimal(10, 2) NULL DEFAULT NULL,
-  `delay_seconds` int NOT NULL DEFAULT 15,
-  `start_time` datetime NOT NULL,
-  `end_time` datetime NOT NULL,
-  `original_end_time` datetime NOT NULL,
-  `current_price` decimal(10, 2) NULL DEFAULT 0.00,
-  `highest_bidder` bigint NULL DEFAULT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'PENDING',
-  `bid_count` int NULL DEFAULT 0,
-  `display_order` int NULL DEFAULT 0,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `room_id` bigint NOT NULL COMMENT '房间ID',
+  `product_id` bigint NOT NULL COMMENT '商品ID',
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '竞拍标题',
+  `start_price` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '起拍价',
+  `bid_increment` decimal(10, 2) NOT NULL COMMENT '加价幅度',
+  `max_price` decimal(10, 2) NULL DEFAULT NULL COMMENT '最高限价',
+  `delay_seconds` int NOT NULL DEFAULT 15 COMMENT '延时拍卖秒数',
+  `start_time` datetime NOT NULL COMMENT '开始时间',
+  `end_time` datetime NOT NULL COMMENT '结束时间',
+  `original_end_time` datetime NOT NULL COMMENT '原始结束时间',
+  `current_price` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '当前价格',
+  `highest_bidder` bigint NULL DEFAULT NULL COMMENT '当前最高出价者ID',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING-待开始, ACTIVE-进行中, COMPLETED-已完成',
+  `bid_count` int NULL DEFAULT 0 COMMENT '出价次数',
+  `display_order` int NULL DEFAULT 0 COMMENT '展示顺序',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_room`(`room_id` ASC) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE,
   INDEX `idx_time`(`start_time` ASC, `end_time` ASC) USING BTREE,
-  INDEX `product_id`(`product_id` ASC) USING BTREE,
-  CONSTRAINT `auction_items_ibfk_1` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `auction_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of auction_items
--- ----------------------------
-INSERT INTO `auction_items` VALUES (1, 0, 1, 1, 'Jade Bangle Auction', 5000.00, 200.00, 50000.00, 15, '2026-05-23 08:21:22', '2026-05-23 09:21:22', '2026-05-23 09:21:22', 6410.00, 1, 'ACTIVE', 0, 1, '2026-05-23 09:30:25', '2026-05-23 09:30:25');
-INSERT INTO `auction_items` VALUES (2, 0, 1, 2, 'Gold Necklace Auction', 2000.00, 100.00, 30000.00, 15, '2026-05-23 08:36:22', '2026-05-23 09:36:22', '2026-05-23 09:36:22', 4150.00, 1, 'ACTIVE', 0, 2, '2026-05-23 09:30:25', '2026-05-23 09:30:25');
-INSERT INTO `auction_items` VALUES (3, 0, 1, 3, 'Ming Porcelain Auction', 10000.00, 500.00, 150000.00, 20, '2026-05-23 08:41:22', '2026-05-23 09:41:22', '2026-05-23 09:41:22', 12500.00, 5, 'ACTIVE', 0, 3, '2026-05-23 09:30:25', '2026-05-23 09:30:25');
-INSERT INTO `auction_items` VALUES (4, 0, 1, 4, 'Teapot Auction', 3000.00, 150.00, 40000.00, 15, '2026-05-23 09:51:22', '2026-05-23 12:51:22', '2026-05-23 12:51:22', 3000.00, NULL, 'PENDING', 0, 4, '2026-05-23 09:30:25', '2026-05-23 09:30:25');
-INSERT INTO `auction_items` VALUES (5, 0, 1, 5, 'Swiss Watch Auction', 8000.00, 300.00, 80000.00, 20, '2026-05-23 10:51:22', '2026-05-23 14:51:22', '2026-05-23 14:51:22', 8000.00, NULL, 'PENDING', 0, 5, '2026-05-23 09:30:25', '2026-05-23 09:30:25');
-INSERT INTO `auction_items` VALUES (6, 0, 1, 6, 'Jade Pendant Auction', 1500.00, 100.00, 20000.00, 10, '2026-05-23 03:51:22', '2026-05-23 07:51:22', '2026-05-23 07:51:22', 4800.00, 5, 'COMPLETED', 0, 6, '2026-05-23 09:30:25', '2026-05-23 09:30:25');
+  INDEX `idx_product`(`product_id` ASC) USING BTREE,
+  CONSTRAINT `fk_auction_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_auction_items_room` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞拍项表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for auction_rooms
 -- ----------------------------
 DROP TABLE IF EXISTS `auction_rooms`;
 CREATE TABLE `auction_rooms`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
-  `host_id` bigint NULL DEFAULT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'PENDING',
-  `viewer_count` int NULL DEFAULT 0,
-  `start_time` datetime NOT NULL,
-  `end_time` datetime NULL DEFAULT NULL,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '房间ID',
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '房间标题',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '房间描述',
+  `host_id` bigint NULL DEFAULT NULL COMMENT '主持人ID',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '房间状态: PENDING-待开始, LIVE-进行中, ENDED-已结束',
+  `viewer_count` int NULL DEFAULT 0 COMMENT '观看人数',
+  `start_time` datetime NOT NULL COMMENT '开始时间',
+  `end_time` datetime NULL DEFAULT NULL COMMENT '结束时间',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE,
   INDEX `idx_time`(`start_time` ASC, `end_time` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞拍房间表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of auction_rooms
+-- Table structure for auctions
 -- ----------------------------
-INSERT INTO `auction_rooms` VALUES (1, 'Premium Auction Room', NULL, NULL, 'LIVE', 0, '2026-05-23 09:30:25', '2026-05-23 13:30:25', '2026-05-23 09:30:25', '2026-05-23 09:30:25');
-
--- ----------------------------
--- Table structure for auctions_backup
--- ----------------------------
-DROP TABLE IF EXISTS `auctions_backup`;
-CREATE TABLE `auctions_backup`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `product_id` bigint NOT NULL,
-  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `start_price` decimal(10, 2) NOT NULL DEFAULT 0.00,
-  `bid_increment` decimal(10, 2) NOT NULL,
-  `max_price` decimal(10, 2) NULL DEFAULT NULL,
-  `delay_seconds` int NOT NULL DEFAULT 15,
-  `start_time` datetime NOT NULL,
-  `end_time` datetime NOT NULL,
-  `original_end_time` datetime NOT NULL,
-  `current_price` decimal(10, 2) NULL DEFAULT 0.00,
-  `highest_bidder` bigint NULL DEFAULT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'PENDING',
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+DROP TABLE IF EXISTS `auctions`;
+CREATE TABLE `auctions`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '竞拍ID',
+  `version` int NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  `product_id` bigint NOT NULL COMMENT '商品ID',
+  `title` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '竞拍标题',
+  `start_price` decimal(10, 2) NOT NULL DEFAULT 0.00 COMMENT '起拍价',
+  `bid_increment` decimal(10, 2) NOT NULL COMMENT '加价幅度',
+  `max_price` decimal(10, 2) NULL DEFAULT NULL COMMENT '最高限价',
+  `delay_seconds` int NOT NULL DEFAULT 15 COMMENT '延时拍卖秒数',
+  `start_time` datetime NOT NULL COMMENT '开始时间',
+  `end_time` datetime NOT NULL COMMENT '结束时间',
+  `original_end_time` datetime NOT NULL COMMENT '原始结束时间',
+  `current_price` decimal(10, 2) NULL DEFAULT 0.00 COMMENT '当前价格',
+  `highest_bidder` bigint NULL DEFAULT NULL COMMENT '当前最高出价者ID',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING' COMMENT '状态: PENDING-待开始, ACTIVE-进行中, COMPLETED-已完成',
+  `winner_id` bigint NULL DEFAULT NULL COMMENT '获胜者ID',
+  `final_price` decimal(10, 2) NULL DEFAULT NULL COMMENT '最终成交价',
+  `settled_at` datetime NULL DEFAULT NULL COMMENT '结算时间',
+  `room_id` bigint NULL DEFAULT NULL COMMENT '竞拍房间ID',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_status`(`status` ASC) USING BTREE,
   INDEX `idx_time`(`start_time` ASC, `end_time` ASC) USING BTREE,
-  INDEX `product_id`(`product_id` ASC) USING BTREE,
-  CONSTRAINT `auctions_backup_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '竞拍活动表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of auctions_backup
--- ----------------------------
-INSERT INTO `auctions_backup` VALUES (1, 1, 'Jade Bangle Auction', 5000.00, 200.00, 50000.00, 15, '2026-05-23 08:21:22', '2026-05-23 09:21:22', '2026-05-23 09:21:22', 6410.00, 1, 'ACTIVE', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `auctions_backup` VALUES (2, 2, 'Gold Necklace Auction', 2000.00, 100.00, 30000.00, 15, '2026-05-23 08:36:22', '2026-05-23 09:36:22', '2026-05-23 09:36:22', 4150.00, 1, 'ACTIVE', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `auctions_backup` VALUES (3, 3, 'Ming Porcelain Auction', 10000.00, 500.00, 150000.00, 20, '2026-05-23 08:41:22', '2026-05-23 09:41:22', '2026-05-23 09:41:22', 12500.00, 5, 'ACTIVE', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `auctions_backup` VALUES (4, 4, 'Teapot Auction', 3000.00, 150.00, 40000.00, 15, '2026-05-23 09:51:22', '2026-05-23 12:51:22', '2026-05-23 12:51:22', 3000.00, NULL, 'PENDING', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `auctions_backup` VALUES (5, 5, 'Swiss Watch Auction', 8000.00, 300.00, 80000.00, 20, '2026-05-23 10:51:22', '2026-05-23 14:51:22', '2026-05-23 14:51:22', 8000.00, NULL, 'PENDING', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `auctions_backup` VALUES (6, 6, 'Jade Pendant Auction', 1500.00, 100.00, 20000.00, 10, '2026-05-23 03:51:22', '2026-05-23 07:51:22', '2026-05-23 07:51:22', 4800.00, 5, 'COMPLETED', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
+  INDEX `idx_product`(`product_id` ASC) USING BTREE,
+  INDEX `idx_room`(`room_id` ASC) USING BTREE,
+  CONSTRAINT `fk_auctions_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_auctions_room` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '竞拍活动表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for auto_bid_configs
 -- ----------------------------
 DROP TABLE IF EXISTS `auto_bid_configs`;
 CREATE TABLE `auto_bid_configs`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `item_id` bigint NOT NULL,
-  `auction_id` bigint NOT NULL,
-  `max_price` decimal(10, 2) NOT NULL,
-  `strategy` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'ACTIVE',
-  `bid_count` int NULL DEFAULT 0,
-  `current_bid` decimal(10, 2) NULL DEFAULT NULL,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '配置ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `item_id` bigint NOT NULL COMMENT '竞拍项ID',
+  `auction_id` bigint NOT NULL COMMENT '竞拍活动ID',
+  `max_price` decimal(10, 2) NOT NULL COMMENT '最高心理价位',
+  `strategy` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '策略: LAST_SEC-最后秒出价, SMART-智能出价, AGGRESSIVE-激进出价',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE-激活, PAUSED-暂停, COMPLETED-完成, CANCELLED-取消',
+  `bid_count` int NULL DEFAULT 0 COMMENT '已出价次数',
+  `current_bid` decimal(10, 2) NULL DEFAULT NULL COMMENT '当前出价',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `uk_user_item`(`user_id` ASC, `item_id` ASC) USING BTREE,
   INDEX `idx_item`(`item_id` ASC) USING BTREE,
-  INDEX `auction_id`(`auction_id` ASC) USING BTREE,
-  CONSTRAINT `auto_bid_configs_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `auction_items` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `auto_bid_configs_ibfk_2` FOREIGN KEY (`auction_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of auto_bid_configs
--- ----------------------------
-
--- ----------------------------
--- Table structure for auto_bid_configs_backup
--- ----------------------------
-DROP TABLE IF EXISTS `auto_bid_configs_backup`;
-CREATE TABLE `auto_bid_configs_backup`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `auction_id` bigint NOT NULL,
-  `max_price` decimal(10, 2) NOT NULL,
-  `strategy` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL COMMENT 'LAST_SEC/SMART/AGGRESSIVE',
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT 'ACTIVE',
-  `bid_count` int NULL DEFAULT 0,
-  `current_bid` decimal(10, 2) NULL DEFAULT NULL,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `uk_user_auction`(`user_id` ASC, `auction_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '代理出价配置表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of auto_bid_configs_backup
--- ----------------------------
-INSERT INTO `auto_bid_configs_backup` VALUES (1, 4, 1, 8000.00, 'SMART', 'ACTIVE', 2, 6200.00, '2026-05-23 08:51:23', '2026-05-23 08:51:23');
-INSERT INTO `auto_bid_configs_backup` VALUES (2, 5, 2, 5000.00, 'AGGRESSIVE', 'ACTIVE', 0, NULL, '2026-05-23 08:51:23', '2026-05-23 08:51:23');
-INSERT INTO `auto_bid_configs_backup` VALUES (3, 5, 3, 20000.00, 'SMART', 'ACTIVE', 2, 12500.00, '2026-05-23 08:51:23', '2026-05-23 08:51:23');
-INSERT INTO `auto_bid_configs_backup` VALUES (4, 1, 4, 12000.00, 'LAST_SEC', 'ACTIVE', 0, NULL, '2026-05-23 08:51:23', '2026-05-23 08:51:23');
-INSERT INTO `auto_bid_configs_backup` VALUES (5, 2, 5, 25000.00, 'SMART', 'ACTIVE', 0, NULL, '2026-05-23 08:51:23', '2026-05-23 08:51:23');
+  INDEX `idx_auction`(`auction_id` ASC) USING BTREE,
+  CONSTRAINT `fk_auto_bid_configs_auction` FOREIGN KEY (`auction_id`) REFERENCES `auctions` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_auto_bid_configs_item` FOREIGN KEY (`item_id`) REFERENCES `auction_items` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_auto_bid_configs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '代理出价配置表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for bids
 -- ----------------------------
 DROP TABLE IF EXISTS `bids`;
 CREATE TABLE `bids`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `item_id` bigint NOT NULL,
-  `auction_id` bigint NOT NULL,
-  `user_id` bigint NOT NULL,
-  `amount` decimal(10, 2) NOT NULL,
-  `rank_when_bid` int NULL DEFAULT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'ACTIVE',
-  `is_auto_bid` tinyint(1) NULL DEFAULT 0,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '出价ID',
+  `item_id` bigint NOT NULL COMMENT '竞拍项ID',
+  `auction_id` bigint NOT NULL COMMENT '竞拍活动ID',
+  `user_id` bigint NOT NULL COMMENT '出价用户ID',
+  `amount` decimal(10, 2) NOT NULL COMMENT '出价金额',
+  `rank_when_bid` int NULL DEFAULT NULL COMMENT '出价时的排名',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE' COMMENT '状态: ACTIVE-有效, WINNER-获胜, EXPIRED-已过期',
+  `is_auto_bid` tinyint(1) NULL DEFAULT 0 COMMENT '是否为代理出价',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_item`(`item_id` ASC) USING BTREE,
   INDEX `idx_auction`(`auction_id` ASC) USING BTREE,
   INDEX `idx_user`(`user_id` ASC) USING BTREE,
   INDEX `idx_item_amount`(`item_id` ASC, `amount` DESC) USING BTREE,
-  INDEX `idx_created`(`created_at` ASC) USING BTREE,
-  CONSTRAINT `bids_ibfk_1` FOREIGN KEY (`item_id`) REFERENCES `auction_items` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `bids_ibfk_2` FOREIGN KEY (`auction_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `bids_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+  INDEX `idx_created_at`(`created_at` ASC) USING BTREE,
+  CONSTRAINT `fk_bids_auction` FOREIGN KEY (`auction_id`) REFERENCES `auctions` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_bids_item` FOREIGN KEY (`item_id`) REFERENCES `auction_items` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_bids_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '出价记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bids
+-- Table structure for login_logs
 -- ----------------------------
-INSERT INTO `bids` VALUES (1, 1, 1, 1, 5000.00, 1, 'ACTIVE', 0, '2026-05-23 00:00:00');
-INSERT INTO `bids` VALUES (2, 1, 1, 2, 5200.00, 1, 'ACTIVE', 0, '2026-05-23 00:05:00');
-INSERT INTO `bids` VALUES (3, 1, 1, 3, 5400.00, 2, 'ACTIVE', 0, '2026-05-23 00:08:00');
-INSERT INTO `bids` VALUES (4, 1, 1, 4, 5800.00, 1, 'ACTIVE', 0, '2026-05-23 00:12:00');
-INSERT INTO `bids` VALUES (5, 1, 1, 2, 6000.00, 2, 'ACTIVE', 0, '2026-05-23 00:15:00');
-INSERT INTO `bids` VALUES (6, 1, 1, 4, 6200.00, 1, 'ACTIVE', 0, '2026-05-23 00:18:00');
-INSERT INTO `bids` VALUES (7, 2, 1, 3, 2000.00, 1, 'ACTIVE', 0, '2026-05-23 00:20:00');
-INSERT INTO `bids` VALUES (8, 2, 1, 1, 2100.00, 2, 'ACTIVE', 0, '2026-05-23 00:22:00');
-INSERT INTO `bids` VALUES (9, 2, 1, 2, 2500.00, 1, 'ACTIVE', 0, '2026-05-23 00:25:00');
-INSERT INTO `bids` VALUES (10, 2, 1, 4, 3000.00, 2, 'ACTIVE', 0, '2026-05-23 00:28:00');
-INSERT INTO `bids` VALUES (11, 2, 1, 2, 3500.00, 1, 'ACTIVE', 0, '2026-05-23 00:30:00');
-INSERT INTO `bids` VALUES (12, 3, 1, 5, 10000.00, 1, 'ACTIVE', 0, '2026-05-23 00:25:00');
-INSERT INTO `bids` VALUES (13, 3, 1, 4, 10500.00, 2, 'ACTIVE', 0, '2026-05-23 00:28:00');
-INSERT INTO `bids` VALUES (14, 3, 1, 5, 11000.00, 1, 'ACTIVE', 1, '2026-05-23 00:30:00');
-INSERT INTO `bids` VALUES (15, 3, 1, 4, 12000.00, 2, 'ACTIVE', 0, '2026-05-23 00:32:00');
-INSERT INTO `bids` VALUES (16, 3, 1, 5, 12500.00, 1, 'ACTIVE', 1, '2026-05-23 00:33:00');
-INSERT INTO `bids` VALUES (17, 6, 1, 1, 1500.00, 1, 'ACTIVE', 0, '2026-05-22 18:00:00');
-INSERT INTO `bids` VALUES (18, 6, 1, 2, 1800.00, 1, 'ACTIVE', 0, '2026-05-22 18:15:00');
-INSERT INTO `bids` VALUES (19, 6, 1, 3, 2200.00, 2, 'ACTIVE', 0, '2026-05-22 18:30:00');
-INSERT INTO `bids` VALUES (20, 6, 1, 4, 3500.00, 1, 'ACTIVE', 0, '2026-05-22 19:00:00');
-INSERT INTO `bids` VALUES (21, 6, 1, 5, 4800.00, 1, 'WINNER', 0, '2026-05-22 19:45:00');
-INSERT INTO `bids` VALUES (22, 1, 1, 1, 6410.00, NULL, 'ACTIVE', 0, '2026-05-23 09:16:00');
-INSERT INTO `bids` VALUES (23, 2, 1, 1, 4150.00, NULL, 'ACTIVE', 0, '2026-05-23 09:24:16');
-
--- ----------------------------
--- Table structure for bids_backup
--- ----------------------------
-DROP TABLE IF EXISTS `bids_backup`;
-CREATE TABLE `bids_backup`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `auction_id` bigint NOT NULL,
-  `user_id` bigint NOT NULL,
-  `amount` decimal(10, 2) NOT NULL,
-  `rank_when_bid` int NULL DEFAULT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'ACTIVE',
-  `is_auto_bid` tinyint(1) NULL DEFAULT 0,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+DROP TABLE IF EXISTS `login_logs`;
+CREATE TABLE `login_logs`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  `user_id` bigint NULL DEFAULT NULL COMMENT '用户ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '用户名',
+  `login_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '登录类型: PASSWORD-密码, SOCIAL-社交, SSO-单点登录',
+  `ip_address` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IP地址',
+  `user_agent` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '浏览器UA',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录状态: SUCCESS-成功, FAILED-失败',
+  `failure_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '失败原因',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_auction_user`(`auction_id` ASC, `user_id` ASC) USING BTREE,
-  INDEX `idx_auction_amount`(`auction_id` ASC, `amount` DESC) USING BTREE,
-  INDEX `idx_created`(`created_at` ASC) USING BTREE,
-  INDEX `user_id`(`user_id` ASC) USING BTREE,
-  CONSTRAINT `bids_backup_ibfk_1` FOREIGN KEY (`auction_id`) REFERENCES `auctions_backup` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `bids_backup_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 24 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '出价记录表' ROW_FORMAT = Dynamic;
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_created_at`(`created_at` ASC) USING BTREE,
+  CONSTRAINT `fk_login_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '登录日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of bids_backup
+-- Table structure for operation_logs
 -- ----------------------------
-INSERT INTO `bids_backup` VALUES (1, 1, 1, 5000.00, 1, 'ACTIVE', 0, '2026-05-23 00:00:00');
-INSERT INTO `bids_backup` VALUES (2, 1, 2, 5200.00, 1, 'ACTIVE', 0, '2026-05-23 00:05:00');
-INSERT INTO `bids_backup` VALUES (3, 1, 3, 5400.00, 2, 'ACTIVE', 0, '2026-05-23 00:08:00');
-INSERT INTO `bids_backup` VALUES (4, 1, 4, 5800.00, 1, 'ACTIVE', 0, '2026-05-23 00:12:00');
-INSERT INTO `bids_backup` VALUES (5, 1, 2, 6000.00, 2, 'ACTIVE', 0, '2026-05-23 00:15:00');
-INSERT INTO `bids_backup` VALUES (6, 1, 4, 6200.00, 1, 'ACTIVE', 0, '2026-05-23 00:18:00');
-INSERT INTO `bids_backup` VALUES (7, 2, 3, 2000.00, 1, 'ACTIVE', 0, '2026-05-23 00:20:00');
-INSERT INTO `bids_backup` VALUES (8, 2, 1, 2100.00, 2, 'ACTIVE', 0, '2026-05-23 00:22:00');
-INSERT INTO `bids_backup` VALUES (9, 2, 2, 2500.00, 1, 'ACTIVE', 0, '2026-05-23 00:25:00');
-INSERT INTO `bids_backup` VALUES (10, 2, 4, 3000.00, 2, 'ACTIVE', 0, '2026-05-23 00:28:00');
-INSERT INTO `bids_backup` VALUES (11, 2, 2, 3500.00, 1, 'ACTIVE', 0, '2026-05-23 00:30:00');
-INSERT INTO `bids_backup` VALUES (12, 3, 5, 10000.00, 1, 'ACTIVE', 0, '2026-05-23 00:25:00');
-INSERT INTO `bids_backup` VALUES (13, 3, 4, 10500.00, 2, 'ACTIVE', 0, '2026-05-23 00:28:00');
-INSERT INTO `bids_backup` VALUES (14, 3, 5, 11000.00, 1, 'ACTIVE', 1, '2026-05-23 00:30:00');
-INSERT INTO `bids_backup` VALUES (15, 3, 4, 12000.00, 2, 'ACTIVE', 0, '2026-05-23 00:32:00');
-INSERT INTO `bids_backup` VALUES (16, 3, 5, 12500.00, 1, 'ACTIVE', 1, '2026-05-23 00:33:00');
-INSERT INTO `bids_backup` VALUES (17, 6, 1, 1500.00, 1, 'ACTIVE', 0, '2026-05-22 18:00:00');
-INSERT INTO `bids_backup` VALUES (18, 6, 2, 1800.00, 1, 'ACTIVE', 0, '2026-05-22 18:15:00');
-INSERT INTO `bids_backup` VALUES (19, 6, 3, 2200.00, 2, 'ACTIVE', 0, '2026-05-22 18:30:00');
-INSERT INTO `bids_backup` VALUES (20, 6, 4, 3500.00, 1, 'ACTIVE', 0, '2026-05-22 19:00:00');
-INSERT INTO `bids_backup` VALUES (21, 6, 5, 4800.00, 1, 'WINNER', 0, '2026-05-22 19:45:00');
-INSERT INTO `bids_backup` VALUES (22, 1, 1, 6410.00, NULL, 'ACTIVE', 0, '2026-05-23 09:16:00');
-INSERT INTO `bids_backup` VALUES (23, 2, 1, 4150.00, NULL, 'ACTIVE', 0, '2026-05-23 09:24:16');
+DROP TABLE IF EXISTS `operation_logs`;
+CREATE TABLE `operation_logs`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  `user_id` bigint NULL DEFAULT NULL COMMENT '操作用户ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作用户名',
+  `module` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作模块',
+  `operation` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作类型',
+  `method` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '请求方法',
+  `params` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '请求参数',
+  `ip_address` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT 'IP地址',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '操作状态: SUCCESS-成功, FAILED-失败',
+  `error_msg` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '错误信息',
+  `duration` int NULL DEFAULT NULL COMMENT '执行耗时(毫秒)',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_module`(`module` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `idx_created_at`(`created_at` ASC) USING BTREE,
+  CONSTRAINT `fk_operation_logs_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '操作日志表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for orders
 -- ----------------------------
 DROP TABLE IF EXISTS `orders`;
 CREATE TABLE `orders`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `room_id` bigint NOT NULL,
-  `item_id` bigint NOT NULL,
-  `user_id` bigint NOT NULL,
-  `product_id` bigint NOT NULL,
-  `final_amount` decimal(10, 2) NOT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'PENDING',
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '订单ID',
+  `room_id` bigint NOT NULL COMMENT '竞拍房间ID',
+  `item_id` bigint NOT NULL COMMENT '竞拍项ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID(获胜者)',
+  `product_id` bigint NOT NULL COMMENT '商品ID',
+  `final_amount` decimal(10, 2) NOT NULL COMMENT '成交金额',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING_PAYMENT' COMMENT '订单状态: PENDING_PAYMENT-待支付, PAID-已支付, SHIPPED-已发货, COMPLETED-已完成, CANCELLED-已取消',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_user`(`user_id` ASC) USING BTREE,
   INDEX `idx_room`(`room_id` ASC) USING BTREE,
   INDEX `idx_item`(`item_id` ASC) USING BTREE,
-  CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `orders_ibfk_2` FOREIGN KEY (`item_id`) REFERENCES `auction_items` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `orders_ibfk_3` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  INDEX `fk_orders_product`(`product_id` ASC) USING BTREE,
+  CONSTRAINT `fk_orders_item` FOREIGN KEY (`item_id`) REFERENCES `auction_items` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_orders_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_orders_room` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_orders_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of orders
+-- Table structure for permissions
 -- ----------------------------
-
--- ----------------------------
--- Table structure for orders_backup
--- ----------------------------
-DROP TABLE IF EXISTS `orders_backup`;
-CREATE TABLE `orders_backup`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `auction_id` bigint NOT NULL,
-  `user_id` bigint NOT NULL,
-  `product_id` bigint NOT NULL,
-  `final_amount` decimal(10, 2) NOT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL DEFAULT 'PENDING',
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+DROP TABLE IF EXISTS `permissions`;
+CREATE TABLE `permissions`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '权限ID',
+  `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '权限编码',
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '权限名称',
+  `resource` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '资源路径',
+  `action` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '操作类型: READ-读, WRITE-写, DELETE-删除',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '权限描述',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_user`(`user_id` ASC) USING BTREE,
-  INDEX `idx_auction`(`auction_id` ASC) USING BTREE,
-  CONSTRAINT `orders_backup_ibfk_1` FOREIGN KEY (`auction_id`) REFERENCES `auctions_backup` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT `orders_backup_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB AUTO_INCREMENT = 2 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '订单表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of orders_backup
--- ----------------------------
-INSERT INTO `orders_backup` VALUES (1, 6, 5, 6, 4800.00, 'PENDING', '2026-05-23 08:51:23', '2026-05-23 08:51:23');
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '权限表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for products
 -- ----------------------------
 DROP TABLE IF EXISTS `products`;
 CREATE TABLE `products`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `image_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
-  `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '商品ID',
+  `merchant_id` bigint NOT NULL DEFAULT 1 COMMENT '商家用户ID',
+  `sku` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '商品编码（唯一标识）',
+  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '商品名称',
+  `brand` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '品牌',
+  `image_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '商品图片URL',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '商品描述',
+  `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '商品分类',
+  `initial_price` decimal(10, 2) NULL DEFAULT NULL COMMENT '初始价格（起拍价参考）',
+  `bid_increment` decimal(10, 2) NULL DEFAULT NULL COMMENT '最低加价幅度',
+  `max_price` decimal(10, 2) NULL DEFAULT NULL COMMENT '封顶价格（最高限价）',
+  `stock` int NOT NULL DEFAULT 0 COMMENT '库存数量',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PENDING_REVIEW' COMMENT '商品状态: PENDING_REVIEW-待审核, LISTED-已上架, DELISTED-已下架, SOLD_OUT-已售罄',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_category`(`category` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 7 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '商品表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of products
--- ----------------------------
-INSERT INTO `products` VALUES (1, 'Jade Bangle', 'https://images.unsplash.com/photo-1617038260897-41a1f14a8ca0?w=400', 'Natural jadeite bangle from Burma', 'Jewelry', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `products` VALUES (2, 'Gold Necklace', 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=400', '999 gold necklace 30g', 'Jewelry', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `products` VALUES (3, 'Blue White Porcelain', 'https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=400', 'Ming Dynasty blue and white vase', 'Ceramics', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `products` VALUES (4, 'Purple Clay Teapot', 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400', 'Master crafted purple clay teapot', 'Tea', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `products` VALUES (5, 'Swiss Watch', 'https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400', 'Swiss mechanical watch', 'Watch', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `products` VALUES (6, 'Hetian Jade Pendant', 'https://images.unsplash.com/photo-1611591437281-460bfbe1220a?w=400', 'Hetian jade pendant with blessing design', 'Jewelry', '2026-05-23 08:51:22', '2026-05-23 08:51:22');
+  UNIQUE INDEX `uk_sku`(`sku` ASC) USING BTREE,
+  INDEX `idx_category`(`category` ASC) USING BTREE,
+  INDEX `idx_merchant`(`merchant_id` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE,
+  CONSTRAINT `fk_products_merchant` FOREIGN KEY (`merchant_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '商品表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for risk_events
 -- ----------------------------
 DROP TABLE IF EXISTS `risk_events`;
 CREATE TABLE `risk_events`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `room_id` bigint NOT NULL,
-  `item_id` bigint NULL DEFAULT NULL,
-  `event_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `severity` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
-  `metadata` json NULL,
-  `action_taken` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '事件ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `room_id` bigint NOT NULL COMMENT '房间ID',
+  `item_id` bigint NULL DEFAULT NULL COMMENT '竞拍项ID',
+  `event_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '事件类型: RAPID_BIDDING-快速出价, ABNORMAL_PATTERN-异常模式, AUTO_BID_DETECTED-代理出价',
+  `severity` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '严重程度: INFO-信息, LOW-低, MEDIUM-中, HIGH-高, CRITICAL-严重',
+  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL COMMENT '事件描述',
+  `metadata` json NULL COMMENT '元数据(JSON格式)',
+  `action_taken` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '采取的行动: ALLOW-允许, MONITOR-监控, BLOCK-拦截, MANUAL_REVIEW-人工审核',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_severity`(`severity` ASC) USING BTREE,
   INDEX `idx_user`(`user_id` ASC) USING BTREE,
   INDEX `idx_room`(`room_id` ASC) USING BTREE,
-  CONSTRAINT `risk_events_ibfk_1` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+  INDEX `idx_event_type`(`event_type` ASC) USING BTREE,
+  CONSTRAINT `fk_risk_events_room` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '风控事件记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of risk_events
+-- Table structure for role_permissions
 -- ----------------------------
-
--- ----------------------------
--- Table structure for risk_events_backup
--- ----------------------------
-DROP TABLE IF EXISTS `risk_events_backup`;
-CREATE TABLE `risk_events_backup`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `auction_id` bigint NOT NULL,
-  `event_type` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `severity` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL,
-  `metadata` json NULL,
-  `action_taken` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
+DROP TABLE IF EXISTS `role_permissions`;
+CREATE TABLE `role_permissions`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '关联ID',
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `permission_id` bigint NOT NULL COMMENT '权限ID',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_severity`(`severity` ASC) USING BTREE,
-  INDEX `idx_user`(`user_id` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '风控事件记录表' ROW_FORMAT = Dynamic;
+  UNIQUE INDEX `uk_role_permission`(`role_id` ASC, `permission_id` ASC) USING BTREE,
+  INDEX `idx_role_id`(`role_id` ASC) USING BTREE,
+  INDEX `idx_permission_id`(`permission_id` ASC) USING BTREE,
+  CONSTRAINT `fk_role_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '角色权限关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of risk_events_backup
+-- Table structure for roles
 -- ----------------------------
-INSERT INTO `risk_events_backup` VALUES (1, 2, 1, 'RAPID_BIDDING', 'LOW', 'Rapid bids detected', '{\"count\": 3, \"interval\": 120}', 'MONITOR', '2026-05-23 00:15:00');
-INSERT INTO `risk_events_backup` VALUES (2, 5, 3, 'AUTO_BID_DETECTED', 'INFO', 'Auto bid detected', '{\"strategy\": \"SMART\"}', 'ALLOW', '2026-05-23 00:30:00');
+DROP TABLE IF EXISTS `roles`;
+CREATE TABLE `roles`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '角色ID',
+  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色编码: ADMIN-管理员, USER-普通用户',
+  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '角色名称',
+  `description` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '角色描述',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_code`(`code` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 5 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '角色表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for user_behaviors
 -- ----------------------------
 DROP TABLE IF EXISTS `user_behaviors`;
 CREATE TABLE `user_behaviors`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `room_id` bigint NOT NULL,
-  `item_id` bigint NULL DEFAULT NULL,
-  `bid_count` int NULL DEFAULT NULL,
-  `avg_bid_interval` int NULL DEFAULT NULL,
-  `last_bid_time` datetime NULL DEFAULT NULL,
-  `risk_score` decimal(3, 2) NULL DEFAULT NULL,
-  `risk_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `is_blocked` tinyint(1) NULL DEFAULT 0,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_risk`(`risk_score` ASC, `is_blocked` ASC) USING BTREE,
-  INDEX `idx_user_room`(`user_id` ASC, `room_id` ASC) USING BTREE,
-  INDEX `room_id`(`room_id` ASC) USING BTREE,
-  CONSTRAINT `user_behaviors_ibfk_1` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of user_behaviors
--- ----------------------------
-
--- ----------------------------
--- Table structure for user_behaviors_backup
--- ----------------------------
-DROP TABLE IF EXISTS `user_behaviors_backup`;
-CREATE TABLE `user_behaviors_backup`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL,
-  `auction_id` bigint NOT NULL,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `room_id` bigint NOT NULL COMMENT '房间ID',
+  `item_id` bigint NULL DEFAULT NULL COMMENT '竞拍项ID',
   `bid_count` int NULL DEFAULT NULL COMMENT '出价次数',
   `avg_bid_interval` int NULL DEFAULT NULL COMMENT '平均出价间隔(秒)',
   `last_bid_time` datetime NULL DEFAULT NULL COMMENT '最后出价时间',
-  `risk_score` decimal(3, 2) NULL DEFAULT NULL COMMENT '风险评分 0-1',
-  `risk_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '风险等级',
-  `is_blocked` tinyint(1) NULL DEFAULT 0,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `risk_score` decimal(3, 2) NULL DEFAULT NULL COMMENT '风险评分(0-1)',
+  `risk_level` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '风险等级: LOW-低, MEDIUM-中, HIGH-高',
+  `is_blocked` tinyint(1) NULL DEFAULT 0 COMMENT '是否被拦截',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_risk`(`risk_score` ASC, `is_blocked` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户行为表' ROW_FORMAT = Dynamic;
+  INDEX `idx_risk`(`risk_score` ASC, `is_blocked` ASC) USING BTREE,
+  INDEX `idx_user_room`(`user_id` ASC, `room_id` ASC) USING BTREE,
+  INDEX `idx_room`(`room_id` ASC) USING BTREE,
+  CONSTRAINT `fk_user_behaviors_room` FOREIGN KEY (`room_id`) REFERENCES `auction_rooms` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户行为表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of user_behaviors_backup
+-- Table structure for user_roles
 -- ----------------------------
-INSERT INTO `user_behaviors_backup` VALUES (1, 1, 1, 2, 300, '2026-05-23 00:15:00', 0.05, 'LOW', 0, '2026-05-23 08:51:23');
-INSERT INTO `user_behaviors_backup` VALUES (2, 2, 1, 3, 250, '2026-05-23 00:15:00', 0.08, 'LOW', 0, '2026-05-23 08:51:23');
-INSERT INTO `user_behaviors_backup` VALUES (3, 3, 2, 2, 180, '2026-05-23 00:28:00', 0.03, 'LOW', 0, '2026-05-23 08:51:23');
-INSERT INTO `user_behaviors_backup` VALUES (4, 4, 1, 2, 360, '2026-05-23 00:18:00', 0.06, 'LOW', 0, '2026-05-23 08:51:23');
-INSERT INTO `user_behaviors_backup` VALUES (5, 5, 3, 3, 160, '2026-05-23 00:33:00', 0.10, 'LOW', 0, '2026-05-23 08:51:23');
+DROP TABLE IF EXISTS `user_roles`;
+CREATE TABLE `user_roles`  (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '关联ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `role_id` bigint NOT NULL COMMENT '角色ID',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  UNIQUE INDEX `uk_user_role`(`user_id` ASC, `role_id` ASC) USING BTREE,
+  INDEX `idx_user_id`(`user_id` ASC) USING BTREE,
+  INDEX `idx_role_id`(`role_id` ASC) USING BTREE,
+  CONSTRAINT `fk_user_roles_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_user_roles_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户角色关联表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Table structure for users
 -- ----------------------------
 DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users`  (
-  `id` bigint NOT NULL AUTO_INCREMENT,
-  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
-  `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `avatar_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  `total_bids` int NULL DEFAULT 0,
-  `total_wins` int NULL DEFAULT 0,
-  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
+  `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '用户名',
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '密码(BCrypt加密)',
+  `nickname` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '昵称',
+  `avatar_url` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '头像URL',
+  `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '邮箱',
+  `phone` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '手机号',
+  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'ACTIVE' COMMENT '用户状态: ACTIVE-激活, LOCKED-锁定, DISABLED-禁用',
+  `last_login_at` datetime NULL DEFAULT NULL COMMENT '最后登录时间',
+  `last_login_ip` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '最后登录IP',
+  `total_bids` int NULL DEFAULT 0 COMMENT '总出价次数',
+  `total_wins` int NULL DEFAULT 0 COMMENT '总获胜次数',
+  `version` int NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+  `created_at` datetime NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` datetime NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `username`(`username` ASC) USING BTREE,
-  INDEX `idx_username`(`username` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 6 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;
-
--- ----------------------------
--- Records of users
--- ----------------------------
-INSERT INTO `users` VALUES (1, 'zhang_san', 'Zhang San', 'https://i.pravatar.cc/150?img=1', 17, 2, '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `users` VALUES (2, 'li_si', 'Li Si', 'https://i.pravatar.cc/150?img=2', 23, 1, '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `users` VALUES (3, 'wang_wu', 'Wang Wu', 'https://i.pravatar.cc/150?img=3', 8, 0, '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `users` VALUES (4, 'zhao_liu', 'Zhao Liu', 'https://i.pravatar.cc/150?img=4', 31, 5, '2026-05-23 08:51:22', '2026-05-23 08:51:22');
-INSERT INTO `users` VALUES (5, 'collector_chen', 'Chen Collector', 'https://i.pravatar.cc/150?img=5', 67, 12, '2026-05-23 08:51:22', '2026-05-23 08:51:22');
+  UNIQUE INDEX `uk_username`(`username` ASC) USING BTREE,
+  INDEX `idx_email`(`email` ASC) USING BTREE,
+  INDEX `idx_phone`(`phone` ASC) USING BTREE,
+  INDEX `idx_status`(`status` ASC) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 8 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci COMMENT = '用户表' ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

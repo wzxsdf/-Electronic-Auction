@@ -4,6 +4,7 @@ import com.auction.domain.entity.Auction;
 import com.auction.domain.entity.User;
 import com.auction.repository.AuctionRepository;
 import com.auction.repository.UserRepository;
+import com.auction.service.follow.AuctionFollowService;
 import com.auction.service.websocket.WsMessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class NotificationService {
     private final WsMessageService wsMessageService;
     private final AuctionRepository auctionRepository;
     private final UserRepository userRepository;
+    private final AuctionFollowService auctionFollowService;
 
     /**
      * 发送竞拍状态变更通知
@@ -37,8 +39,11 @@ public class NotificationService {
         }
 
         switch (newStatus.toUpperCase()) {
-            case "ACTIVE" ->
+            case "ACTIVE" -> {
                 wsMessageService.sendAuctionStarted(auctionId);
+                // 通知关注者
+                notifyAuctionStartedToFollower(auctionId);
+            }
             case "COMPLETED" ->
                 handleAuctionCompletedNotification(auction);
             case "CANCELLED" ->
@@ -49,19 +54,33 @@ public class NotificationService {
     }
 
     /**
-     * 处理竞拍完成通知
+     * 发送活动开始通知给关注者
      */
-    private void handleAuctionCompletedNotification(Auction auction) {
-        if (auction.getWinnerId() != null) {
-            // 有成交者
-            wsMessageService.sendYouWon(auction.getWinnerId(), auction.getId(),
-                auction.getFinalPrice() != null ? auction.getFinalPrice() : auction.getCurrentPrice());
+    public void notifyAuctionStartedToFollower(Long auctionId) {
+        List<Long> followerIds = auctionFollowService.getAuctionFollowerIds(auctionId);
+
+        if (followerIds.isEmpty()) {
+            log.debug("活动没有关注者，跳过通知: auctionId={}", auctionId);
+            return;
         }
 
-        // 广播竞拍结束通知
-        wsMessageService.sendAuctionEnded(auction.getId(), auction.getWinnerId(),
-            auction.getFinalPrice() != null ? auction.getFinalPrice() : auction.getCurrentPrice(),
-            auction.getWinnerId() != null);
+        log.info("发送活动开始通知给关注者: auctionId={}, followerCount={}",
+                auctionId, followerIds.size());
+
+        // 异步发送通知给每个关注者
+        followerIds.forEach(userId ->
+                wsMessageService.sendAuctionStartedToFollower(userId, auctionId)
+        );
+    }
+
+    /**
+     * 处理竞拍完成通知
+     * ⚠️ 临时实现，重构后需要从AuctionItem获取成交信息
+     */
+    private void handleAuctionCompletedNotification(Auction auction) {
+        // TODO: 重构后需要从AuctionItem获取成交信息
+        // 临时实现：仅发送活动结束通知，不包含具体成交信息
+        wsMessageService.sendAuctionEnded(auction.getId(), null, BigDecimal.ZERO, false);
     }
 
     /**
@@ -119,6 +138,9 @@ public class NotificationService {
             .forEach(userId -> notifyLost(userId, auctionId));
     }
 
+    /**
+     * 获取竞拍参与者用户ID列表
+     */
     /**
      * 获取竞拍参与者用户ID列表
      */

@@ -1,5 +1,6 @@
 package com.auction.api.dto.request;
 
+import com.auction.domain.enums.RoleCode;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -45,4 +46,11 @@ public class RegisterRequest {
      */
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
+
+    /**
+     * 角色类型（可选，默认为USER普通用户）
+     * 可选值：USER（普通用户）、MERCHANT（商家）
+     * 注意：不允许直接注册ADMIN和STREAMER角色
+     */
+    private RoleCode roleType;
 }

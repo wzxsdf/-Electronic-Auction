@@ -18,6 +18,9 @@ public enum ErrorCode {
     AUCTION_NOT_STARTED(1002, "竞拍未开始"),
     AUCTION_ALREADY_ENDED(1003, "竞拍已结束"),
     AUCTION_CANCELLED(1004, "竞拍已取消"),
+    AUCTION_STATUS_INVALID(1005, "竞拍状态无效"),
+    AUCTION_ITEM_NOT_FOUND(1006, "拍品不存在"),
+    NO_PERMISSION(1007, "无权限操作"),
 
     // 出价相关 2000-2999
     BID_AMOUNT_TOO_LOW(2001, "出价金额必须高于当前价格"),
@@ -29,6 +32,7 @@ public enum ErrorCode {
     // 用户相关 3000-3999
     USER_NOT_FOUND(3001, "用户不存在"),
     USER_BALANCE_INSUFFICIENT(3002, "余额不足"),
+    USER_DISABLED(3003, "用户已被禁用"),
 
     // 认证相关 3100-3199
     USERNAME_ALREADY_EXISTS(3101, "用户名已存在"),

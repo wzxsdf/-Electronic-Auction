@@ -1,0 +1,370 @@
+### ================================================================================
+### 💳 支付系统模块接口测试
+### ================================================================================
+### 功能：创建支付、查询支付状态、支付回调处理等
+### 依赖：需要用户Token和订单ID（auth + orders模块）
+### 权限：订单所有者
+### 业务流程：创建支付 → 完成支付 → 回调处理 → 订单状态更新
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+@orderId = {{orderId}}
+
+### ================================================================================
+### 💳 创建支付
+### ================================================================================
+
+### 1.1 创建支付宝支付
+POST {{baseUrl}}/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "orderId": {{orderId}},
+  "paymentMethod": "ALIPAY",
+  "amount": 8899.00,
+  "returnUrl": "http://localhost:8080/payment/success",
+  "cancelUrl": "http://localhost:8080/payment/cancel"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 支付创建成功");
+            client.log("💳 支付ID: " + body.data.paymentId);
+            client.log("🔗 支付URL: " + body.data.paymentUrl);
+            client.log("⏰ 过期时间: " + body.data.expireTime);
+            client.log("💰 支付金额: " + body.data.amount);
+        }
+    } else {
+        client.log("❌ 支付创建失败: " + response.body);
+    }
+%}
+
+### 1.2 创建微信支付
+POST {{baseUrl}}/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "orderId": {{orderId}},
+  "paymentMethod": "WECHAT",
+  "amount": 8899.00
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 微信支付创建成功");
+    }
+%}
+
+### 1.3 创建银行卡支付
+POST {{baseUrl}}/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "orderId": {{orderId}},
+  "paymentMethod": "BANK_CARD",
+  "amount": 8899.00,
+  "cardNumber": "****1234",
+  "cardHolder": "测试用户"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 银行卡支付创建成功");
+    }
+%}
+
+### 1.4 错误测试 - 无效支付方式
+POST {{baseUrl}}/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "orderId": {{orderId}},
+  "paymentMethod": "BITCOIN",
+  "amount": 8899.00
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 支付方式验证正常");
+    } else {
+        client.log("❌ 支付方式验证异常");
+    }
+%}
+
+### 1.5 错误测试 - 负数金额
+POST {{baseUrl}}/payments
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "orderId": {{orderId}},
+  "paymentMethod": "ALIPAY",
+  "amount": -100.00
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 金额验证正常 - 不能为负数");
+    } else {
+        client.log("❌ 金额验证异常");
+    }
+%}
+
+### ================================================================================
+### 🔍 查询支付状态
+### ================================================================================
+
+### 2.1 查询支付详情
+GET {{baseUrl}}/payments/{{paymentId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询支付详情成功");
+            client.log("💳 支付ID: " + body.data.id);
+            client.log("📋 订单ID: " + body.data.orderId);
+            client.log("💰 支付金额: " + body.data.amount);
+            client.log("📊 支付状态: " + body.data.status);
+            client.log("🏦 支付方式: " + body.data.paymentMethod);
+        }
+    } else {
+        client.log("❌ 查询支付详情失败");
+    }
+%}
+
+### 2.2 查询订单的支付记录
+GET {{baseUrl}}/payments/order/{{orderId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询订单支付记录成功");
+            client.log("📊 支付记录数: " + body.data.length);
+        }
+    }
+%}
+
+### 2.3 查询用户的支付记录
+GET {{baseUrl}}/payments/user/{{currentUserId}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询用户支付记录成功");
+    }
+%}
+
+### ================================================================================
+### 🔄 支付回调处理
+### ================================================================================
+
+### 3.1 支付成功回调（模拟支付宝回调）
+POST {{baseUrl}}/payments/callback/alipay
+Content-Type: application/json
+
+{
+  "out_trade_no": "ORDER_123456",
+  "trade_no": "ALI_2026060800001",
+  "total_amount": "8899.00",
+  "trade_status": "TRADE_SUCCESS",
+  "notify_time": "2026-06-08T10:30:00",
+  "sign": "模拟签名"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 支付回调处理成功");
+    } else {
+        client.log("❌ 支付回调处理失败");
+    }
+%}
+
+### 3.2 支付失败回调
+POST {{baseUrl}}/payments/callback/alipay
+Content-Type: application/json
+
+{
+  "out_trade_no": "ORDER_123456",
+  "trade_no": "ALI_2026060800002",
+  "total_amount": "8899.00",
+  "trade_status": "TRADE_FAILED",
+  "notify_time": "2026-06-08T10:35:00",
+  "error_code": "BALANCE_NOT_ENOUGH",
+  "sign": "模拟签名"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 支付失败回调处理成功");
+    }
+%}
+
+### 3.3 微信支付回调
+POST {{baseUrl}}/payments/callback/wechat
+Content-Type: application/json
+
+{
+  "out_trade_no": "ORDER_123456",
+  "transaction_id": "WX_2026060800001",
+  "total_fee": "889900",
+  "result_code": "SUCCESS",
+  "time_end": "20260608103000",
+  "sign": "模拟签名"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 微信支付回调处理成功");
+    }
+%}
+
+### ================================================================================
+### 💰 退款接口
+### ================================================================================
+
+### 4.1 申请全额退款
+POST {{baseUrl}}/payments/{{paymentId}}/refund
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "refundAmount": 8899.00,
+  "reason": "商品质量问题"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 退款申请成功");
+            client.log("💳 退款ID: " + body.data.refundId);
+            client.log("💰 退款金额: " + body.data.refundAmount);
+        }
+    } else {
+        client.log("❌ 退款申请失败");
+    }
+%}
+
+### 4.2 申请部分退款
+POST {{baseUrl}}/payments/{{paymentId}}/refund
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "refundAmount": 1000.00,
+  "reason": "部分退款"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 部分退款申请成功");
+    }
+%}
+
+### 4.3 查询退款状态
+GET {{baseUrl}}/payments/refunds/{{refundId}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询退款状态成功");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全和验证测试
+### ================================================================================
+
+### 5.1 签名验证测试
+POST {{baseUrl}}/payments/callback/alipay
+Content-Type: application/json
+
+{
+  "out_trade_no": "ORDER_123456",
+  "trade_no": "ALI_FAKE",
+  "total_amount": "8899.00",
+  "trade_status": "TRADE_SUCCESS",
+  "sign": "错误的签名"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 签名验证正常");
+    } else {
+        client.log("⚠️ 签名验证需要加强");
+    }
+%}
+
+### 5.2 重复回调测试
+### 多次发送相同的回调，系统应该幂等处理
+
+### 5.3 金额篡改测试
+POST {{baseUrl}}/payments/callback/alipay
+Content-Type: application/json
+
+{
+  "out_trade_no": "ORDER_123456",
+  "trade_no": "ALI_2026060800003",
+  "total_amount": "0.01",
+  "trade_status": "TRADE_SUCCESS",
+  "sign": "模拟签名"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 金额验证正常");
+    } else {
+        client.log("⚠️ 金额验证需要加强");
+    }
+%}
+
+### ================================================================================
+### 📊 支付统计
+### ================================================================================
+
+### 6.1 获取用户支付统计
+GET {{baseUrl}}/payments/statistics/user/{{currentUserId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 获取支付统计成功");
+            client.log("💰 总支付金额: " + body.data.totalAmount);
+            client.log("📊 支付次数: " + body.data.totalCount);
+            client.log("✅ 成功支付: " + body.data.successCount);
+            client.log("❌ 失败支付: " + body.data.failedCount);
+        }
+    }
+%}
+
+### 6.2 获取平台支付统计（管理员）
+GET {{baseUrl}}/payments/statistics/platform
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取平台支付统计成功");
+    } else if (response.status === 403) {
+        client.log("⚠️ 需要管理员权限");
+    }
+%}
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 支付回调需要模拟第三方支付平台的回调请求
+### 2. 签名验证是安全重点，确保签名算法正确
+### 3. 支付成功后，订单状态应该自动更新
+### 4. 退款功能需要验证订单状态和支付状态
+### 5. 支付过期时间需要合理设置，通常15-30分钟
+### 6. 回调处理应该是幂等的，重复回调不会重复处理
+
+### ================================================================================

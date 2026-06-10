@@ -133,6 +133,12 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+        <!--阿里OSS服务-->
+        <dependency>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>3.17.3</version>
+        </dependency>
 
         <!-- Test -->
         <dependency>

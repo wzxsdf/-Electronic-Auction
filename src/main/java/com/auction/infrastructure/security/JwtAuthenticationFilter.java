@@ -12,15 +12,18 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * JWT认证过滤器
+ * 从请求头中提取JWT token，解析用户信息并存储到SecurityContext
  */
 @Slf4j
 @Component
@@ -35,12 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
      * 不需要认证的路径
      */
     private static final List<String> EXCLUDE_PATHS = List.of(
-        "/auth/register",
-        "/auth/login",
+        "/api/auth/register",
+        "/api/auth/login",
         "/ws",
         "/swagger-resources",
         "/v3/api-docs",
-        "/swagger-ui"
+        "/swagger-ui",
+        "/products"  // 商品查询接口公开访问
     );
 
     @Override
@@ -49,51 +53,78 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         String requestPath = request.getRequestURI();
 
-        // 检查是否为排除路径
-        if (isExcludePath(requestPath)) {
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
-            // 提取Token
-            String token = extractToken(request);
-            if (token == null) {
-                handleAuthenticationFailure(response, "未提供认证令牌");
+            // 1. 检查是否为排除路径（公开接口）
+            if (isExcludePath(requestPath)) {
+                // 公开接口，不设置用户信息，但继续处理请求
+                filterChain.doFilter(request, response);
                 return;
             }
 
-            // 验证Token
+            // 2. 提取Token
+            String token = extractToken(request);
+            if (token == null) {
+                // 没有 token，继续处理（可能后续会有其他认证方式或参数解析器处理）
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            // 3. 验证Token
             if (!jwtService.validateToken(token)) {
                 handleAuthenticationFailure(response, "令牌无效或已过期");
                 return;
             }
 
-            // 检查Token类型
+            // 4. 检查Token类型
             if (!jwtService.isAccessToken(token)) {
                 handleAuthenticationFailure(response, "令牌类型错误");
                 return;
             }
 
-            // 检查Token是否在黑名单中（已注销）
+            // 5. 检查Token是否在黑名单中（已注销）
             Long userId = jwtService.getUserIdFromToken(token);
             if (isTokenBlacklisted(userId, token)) {
                 handleAuthenticationFailure(response, "令牌已失效");
                 return;
             }
 
-            // 设置用户信息到请求头
+            // 6. 提取用户信息
             String username = jwtService.getUsernameFromToken(token);
+            List<String> roles = jwtService.getRolesFromToken(token);
+
+            // 7. 创建Spring Security认证对象
+            List<SimpleGrantedAuthority> authorities = roles.stream()
+                .map(SimpleGrantedAuthority::new)
+                .toList();
+
+            UsernamePasswordAuthenticationToken authentication =
+                new UsernamePasswordAuthenticationToken(username, null, authorities);
+
+            // 设置到Spring Security上下文
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // 8. 同时设置到我们自定义的SecurityContext（供@CurrentUser使用）
+            UserPrincipal userPrincipal = new UserPrincipal(userId, username,
+                roles != null && !roles.isEmpty() ? roles.get(0) : "USER");
+            com.auction.infrastructure.security.SecurityContextHolder.setContext(
+                new com.auction.infrastructure.security.SecurityContext(userPrincipal));
+
+            // 9. 设置到请求属性中（便于其他地方使用）
             request.setAttribute("userId", userId);
             request.setAttribute("username", username);
             request.setAttribute("token", token);
 
-            // 继续过滤器链
+            // 10. 继续过滤器链
             filterChain.doFilter(request, response);
 
         } catch (Exception e) {
             log.error("JWT认证失败: {}", e.getMessage());
             handleAuthenticationFailure(response, "认证失败");
+        } finally {
+            // 清理自定义Security上下文，避免线程池复用时的安全问题
+            com.auction.infrastructure.security.SecurityContextHolder.clearContext();
+            // 清理Spring Security上下文
+            SecurityContextHolder.clearContext();
         }
     }
 

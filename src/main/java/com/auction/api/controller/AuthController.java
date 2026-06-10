@@ -7,6 +7,8 @@ import com.auction.api.dto.response.UserResponse;
 import com.auction.annotation.RateLimit;
 import com.auction.common.Result;
 import com.auction.domain.entity.User;
+import com.auction.infrastructure.security.CurrentUser;
+import com.auction.infrastructure.security.UserPrincipal;
 import com.auction.service.auth.AuthService;
 import com.auction.service.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -55,17 +57,23 @@ public class AuthController {
 
     /**
      * 用户登出
+     * <p>
+     * 认证方式：使用JWT Token + @CurrentUser注解
+     * 安全性：token存储在HTTP Authorization头部，无法伪造
      */
     @PostMapping("/logout")
-    public Result<Void> logout(@RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        if (userId != null) {
-            authService.logout(userId);
+    public Result<Void> logout(@CurrentUser UserPrincipal currentUser) {
+        if (currentUser != null) {
+            authService.logout(currentUser.getUserId());
         }
         return Result.ok();
     }
 
     /**
      * 刷新Token
+     * <p>
+     * 认证方式：从JWT Token自动提取用户信息
+     * 注意：refreshToken接口仍需要从Authorization头获取token
      */
     @PostMapping("/refresh")
     public Result<String> refreshToken(@RequestHeader("Authorization") String authorization) {
@@ -77,10 +85,13 @@ public class AuthController {
 
     /**
      * 获取当前用户信息
+     * <p>
+     * 认证方式：使用JWT Token + @CurrentUser注解
+     * 安全性：token存储在HTTP Authorization头部，无法伪造
      */
     @GetMapping("/me")
-    public Result<UserResponse> getCurrentUser(@RequestHeader("X-User-Id") Long userId) {
-        UserResponse response = userService.findCurrentUser(userId);
+    public Result<UserResponse> getCurrentUser(@CurrentUser UserPrincipal currentUser) {
+        UserResponse response = userService.findCurrentUser(currentUser.getUserId());
         return Result.ok(response);
     }
 

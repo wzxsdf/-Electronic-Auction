@@ -1,97 +1,71 @@
 package com.auction.service.scheduler;
 
-import com.auction.service.consistency.DataConsistencyService;
-import com.auction.service.settlement.AuctionDelayService;
-import com.auction.service.settlement.AuctionSettlementService;
+import com.auction.service.auction.AuctionItemService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * 竞拍定时任务调度器
- * 负责处理竞拍相关的定时任务，包括：
- * 1. 竞拍结束结算
- * 2. 竞拍自动延期检查
- * 3. 竞拍自动开始
- * 4. 数据一致性检查
+ * 拍卖定时任务调度器（重构后）
+ * <p>
+ * 负责处理拍品相关的定时任务，包括：
+ * 1. 拍品自动结算 - 结束到期的活跃拍品
+ * 2. 拍品自动开始 - 启动待开始的拍品
+ * <p>
+ * 重构说明：
+ * - 删除了Auction级别的延时检查（延时机制已在出价时触发）
+ * - 删除了Auction级别的数据一致性检查（新架构无Auction级缓存）
+ * - 所有操作改为AuctionItem级别
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class AuctionScheduler {
 
-    private final AuctionSettlementService settlementService;
-    private final AuctionDelayService delayService;
-    private final DataConsistencyService dataConsistencyService;
+    private final AuctionItemService auctionItemService;
 
     /**
-     * 竞拍结算定时任务
-     * 每10秒执行一次，检查并结算已到期的竞拍
-     *
-     * 使用固定延迟执行，上次执行完成后等待10秒再执行下次
+     * 拍品自动结算定时任务
+     * 每10秒执行一次，检查并结算已到期的拍品
+     * <p>
+     * 查询结束时间已过但状态仍为ACTIVE的拍品，自动结束并生成订单
      */
     @Scheduled(fixedDelay = 10000, initialDelay = 5000)
-    public void settleExpiredAuctions() {
+    public void settleExpiredItems() {
         try {
-            log.debug("开始执行竞拍结算定时任务");
-            int count = settlementService.settleExpiredAuctions();
+            int count = auctionItemService.settleExpiredItems();
             if (count > 0) {
-                log.info("竞拍结算定时任务执行完成，结算数量: {}", count);
+                log.info("拍品自动结算定时任务执行完成，结算数量: {}", count);
             }
         } catch (Exception e) {
-            log.error("竞拍结算定时任务执行失败", e);
+            log.error("拍品自动结算定时任务执行失败", e);
         }
     }
 
-    /**
-     * 竞拍延期检查定时任务
-     * 每5秒执行一次，检查是否需要自动延期
-     *
-     * 临近结束（最后delaySeconds秒）有出价时自动延期
-     */
-    @Scheduled(fixedDelay = 5000, initialDelay = 3000)
-    public void checkAuctionDelay() {
-        try {
-            log.debug("开始执行竞拍延期检查定时任务");
-            int count = delayService.checkAndExtendAuctions();
-            if (count > 0) {
-                log.info("竞拍延期检查定时任务执行完成，延长数量: {}", count);
-            }
-        } catch (Exception e) {
-            log.error("竞拍延期检查定时任务执行失败", e);
-        }
-    }
+//    /**
+//     * 拍品自动开始定时任务
+//     * 每30秒执行一次，检查并启动到期的待开始拍品
+//     * <p>
+//     * 查询开始时间已到但状态仍为PENDING的拍品，自动启动
+//     * 注意：只有所属活动状态为ACTIVE时，拍品才能自动开始
+//     */
+//    @Scheduled(fixedDelay = 30000, initialDelay = 10000)
+//    public void startPendingItems() {
+//        try {
+//            int count = auctionItemService.startPendingItems();
+//            if (count > 0) {
+//                log.info("拍品自动开始定时任务执行完成，启动数量: {}", count);
+//            }
+//        } catch (Exception e) {
+//            log.error("拍品自动开始定时任务执行失败", e);
+//        }
+//    }
 
     /**
-     * 竞拍自动开始定时任务
-     * 每30秒执行一次，检查并启动到期的待开始竞拍
+     * ==================== 已废弃的定时任务 ====================
+     * 以下定时任务在重构后已不再需要，已删除：
+     * - checkAuctionDelay(): 延时机制已在AuctionItemService出价时触发
+     * - checkDataConsistency(): 新架构无Auction级别缓存，无需检查
      */
-    @Scheduled(fixedDelay = 30000, initialDelay = 10000)
-    public void startPendingAuctions() {
-        try {
-            log.debug("开始执行竞拍自动开始定时任务");
-            // TODO: 实现自动开始逻辑
-            // settlementService.startPendingAuctions();
-        } catch (Exception e) {
-            log.error("竞拍自动开始定时任务执行失败", e);
-        }
-    }
-
-    /**
-     * 数据一致性检查定时任务
-     * 每5分钟执行一次，检查并修复Redis-数据库数据不一致问题
-     */
-    @Scheduled(fixedDelay = 300000, initialDelay = 60000)
-    public void checkDataConsistency() {
-        try {
-            log.debug("开始执行数据一致性检查定时任务");
-            int fixedCount = dataConsistencyService.checkActiveAuctionsConsistency();
-            if (fixedCount > 0) {
-                log.info("数据一致性检查完成，修复数量: {}", fixedCount);
-            }
-        } catch (Exception e) {
-            log.error("数据一致性检查定时任务执行失败", e);
-        }
-    }
 }

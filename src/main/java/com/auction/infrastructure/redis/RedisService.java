@@ -1,5 +1,6 @@
 package com.auction.infrastructure.redis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -13,6 +14,7 @@ import java.util.Set;
 public class RedisService {
 
     private final RedisTemplate<String, Object> redisTemplate;
+    private final ObjectMapper objectMapper;
 
     public void set(String key, Object value) {
         redisTemplate.opsForValue().set(key, value);
@@ -24,6 +26,31 @@ public class RedisService {
 
     public Object get(String key) {
         return redisTemplate.opsForValue().get(key);
+    }
+
+    /**
+     * 获取缓存并转换指定类型
+     * 解决 Redis 反序列化时 LinkedHashMap 无法直接转换为具体类型的问题
+     */
+    public <T> T get(String key, Class<T> clazz) {
+        Object value = redisTemplate.opsForValue().get(key);
+        if (value == null) {
+            return null;
+        }
+
+        // 如果已经是目标类型，直接返回
+        if (clazz.isInstance(value)) {
+            return clazz.cast(value);
+        }
+
+        // 如果是 LinkedHashMap，使用 ObjectMapper 转换
+        try {
+            return objectMapper.convertValue(value, clazz);
+        } catch (Exception e) {
+            log.error("Redis缓存类型转换失败: key={}, targetClass={}, error={}",
+                    key, clazz.getSimpleName(), e.getMessage());
+            return null;
+        }
     }
 
     public Boolean delete(String key) {
@@ -40,6 +67,14 @@ public class RedisService {
 
     public Long increment(String key, long delta) {
         return redisTemplate.opsForValue().increment(key, delta);
+    }
+
+    public Long decrement(String key) {
+        return redisTemplate.opsForValue().decrement(key);
+    }
+
+    public Long decrement(String key, long delta) {
+        return redisTemplate.opsForValue().decrement(key, delta);
     }
 
     public Boolean zAdd(String key, Object member, double score) {

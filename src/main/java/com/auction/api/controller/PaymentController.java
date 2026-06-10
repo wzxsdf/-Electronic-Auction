@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * 支付控制器：处理订单支付、查询支付状态和取消支付操作，支持同步/异步支付
+ * 支付控制器： 、查询支付状态和取消支付操作，支持同步/异步支付
  */
 @RestController
 @RequestMapping("/payments")

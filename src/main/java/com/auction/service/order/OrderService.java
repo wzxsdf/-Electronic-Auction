@@ -182,8 +182,8 @@ public class OrderService {
         if (order.getProductId() == null) {
             throw new BizException(ErrorCode.BAD_REQUEST, "商品ID不能为空");
         }
-        if (order.getItemId() == null) {
-            throw new BizException(ErrorCode.BAD_REQUEST, "竞拍ID不能为空");
+        if (order.getAuctionItemId() == null) {
+            throw new BizException(ErrorCode.BAD_REQUEST, "拍品ID不能为空");
         }
         if (order.getFinalAmount() == null || order.getFinalAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new BizException(ErrorCode.BAD_REQUEST, "订单金额必须大于0");
@@ -230,12 +230,11 @@ public class OrderService {
      */
     private void enrichOrderInfo(Order order) {
         // 加载竞拍信息
-        if (order.getItemId() != null) {
-            var auction = auctionRepository.findById(order.getItemId());
+        if (order.getAuctionItemId() != null) {
+            var auction = auctionRepository.findById(order.getAuctionItemId());
             if (auction != null) {
                 order.setAuctionTitle(auction.getTitle());
-                order.setAuctionStartTime(auction.getStartTime());
-                order.setAuctionEndTime(auction.getEndTime());
+                // TODO: 添加时间信息字段如果需要
             }
         }
 

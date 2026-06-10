@@ -1,0 +1,450 @@
+### ================================================================================
+### 📦 商品管理模块接口测试
+### ================================================================================
+### 功能：商品创建、查询、更新、上架下架、图片管理等
+### 依赖：需要商家Token（auth模块）
+### 权限：商家/管理员
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@merchantToken = {{merchantToken}}
+@productId = {{productId}}
+
+### ================================================================================
+### 🆕 创建商品
+### ================================================================================
+
+### 1.1 创建电子产品
+POST {{baseUrl}}/products
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "iPhone 15 Pro Max",
+  "description": "全新未拆封，256GB，钛金属原色，支持5G网络",
+  "basePrice": 8999.00,
+  "category": "ELECTRONICS",
+  "brand": "Apple",
+  "model": "iPhone 15 Pro Max",
+  "images": [
+    "https://example.com/iphone1.jpg",
+    "https://example.com/iphone2.jpg"
+  ]
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.id) {
+            client.global.set("productId", body.data.id);
+            client.log("✅ 商品创建成功");
+            client.log("📦 商品ID: " + body.data.id);
+            client.log("📦 商品名称: " + body.data.name);
+            client.log("💰 基础价格: " + body.data.basePrice);
+        }
+    } else {
+        client.log("❌ 商品创建失败: " + response.body);
+    }
+%}
+
+### 1.2 创建奢侈品
+POST {{baseUrl}}/products
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "LV限量版手提包",
+  "description": "全新正品，支持专柜验货",
+  "basePrice": 15000.00,
+  "category": "LUXURY",
+  "brand": "Louis Vuitton",
+  "model": "Limited Edition",
+  "images": [
+    "https://example.com/lv1.jpg"
+  ]
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 奢侈品创建成功");
+    }
+%}
+
+### 1.3 创建艺术品
+POST {{baseUrl}}/products
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "名家山水画",
+  "description": "当代著名画家真迹，附证书",
+  "basePrice": 50000.00,
+  "category": "ART",
+  "brand": "知名画家",
+  "model": "山水画",
+  "images": [
+    "https://example.com/art1.jpg"
+  ]
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 艺术品创建成功");
+    }
+%}
+
+### 1.4 权限测试 - 普通用户尝试创建商品（应该失败）
+POST {{baseUrl}}/products
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "测试商品",
+  "description": "普通用户不应该能创建商品",
+  "basePrice": 100.00,
+  "category": "ELECTRONICS"
+}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 权限验证正常 - 普通用户无法创建商品");
+    } else {
+        client.log("❌ 权限验证异常");
+    }
+%}
+
+### 1.5 参数验证测试 - 缺少必填字段
+POST {{baseUrl}}/products
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "测试商品"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 参数验证正常 - 缺少必填字段");
+    } else {
+        client.log("❌ 参数验证异常");
+    }
+%}
+
+### ================================================================================
+### 🔍 查询商品
+### ================================================================================
+
+### 2.1 查询商品详情
+GET {{baseUrl}}/products/{{productId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询商品详情成功");
+            client.log("📦 商品名称: " + body.data.name);
+            client.log("💰 价格: " + body.data.basePrice);
+            client.log("📂 分类: " + body.data.category);
+        }
+    } else {
+        client.log("❌ 查询失败");
+    }
+%}
+
+### 2.2 查询商品列表（分页）
+GET {{baseUrl}}/products?page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询商品列表成功");
+            client.log("📊 商品数量: " + body.data.length);
+        }
+    }
+%}
+
+### 2.3 关键字搜索
+GET {{baseUrl}}/products?keyword=iPhone&page=1&size=5
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 关键字搜索成功");
+            client.log("🔍 搜索结果: " + body.data.length + " 个商品");
+        }
+    }
+%}
+
+### 2.4 按分类筛选
+GET {{baseUrl}}/products?category=ELECTRONICS&page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 分类筛选成功");
+    }
+%}
+
+### 2.5 综合筛选
+GET {{baseUrl}}/products?page=1&size=10&keyword=iPhone&category=ELECTRONICS&status=LISTED
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 综合筛选成功");
+    }
+%}
+
+### ================================================================================
+### ✏️ 更新商品
+### ================================================================================
+
+### 3.1 更新商品信息
+PUT {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "iPhone 15 Pro Max (升级版)",
+  "description": "全新未拆封，256GB，钛金属原色，支持5G网络，附赠配件",
+  "basePrice": 8799.00,
+  "category": "ELECTRONICS",
+  "brand": "Apple",
+  "model": "iPhone 15 Pro Max"
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        client.log("✅ 商品信息更新成功");
+        if (body.data) {
+            client.log("📦 新名称: " + body.data.name);
+            client.log("💰 新价格: " + body.data.basePrice);
+        }
+    } else {
+        client.log("❌ 商品更新失败");
+    }
+%}
+
+### 3.2 权限测试 - 普通用户尝试更新（应该失败）
+PUT {{baseUrl}}/products/{{productId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "非法修改的商品名称",
+  "description": "普通用户不应该能修改",
+  "basePrice": 1.00
+}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 权限验证正常 - 普通用户无法更新商品");
+    } else {
+        client.log("❌ 权限验证异常");
+    }
+%}
+
+### ================================================================================
+### 📤 商品上架下架
+### ================================================================================
+
+### 4.1 上架商品
+POST {{baseUrl}}/products/{{productId}}/list
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 商品上架成功");
+    } else {
+        client.log("❌ 商品上架失败");
+    }
+%}
+
+### 4.2 下架商品
+POST {{baseUrl}}/products/{{productId}}/delist
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 商品下架成功");
+    } else {
+        client.log("❌ 商品下架失败");
+    }
+%}
+
+### 4.3 重新上架
+POST {{baseUrl}}/products/{{productId}}/list
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 商品重新上架成功");
+    }
+%}
+
+### ================================================================================
+### 🖼️ 商品图片管理
+### ================================================================================
+
+### 5.1 上传商品图片
+POST {{baseUrl}}/products/{{productId}}/images
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "imageUrl": "https://oss-example.com/products/iphone-new.jpg",
+  "isPrimary": true
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 商品图片上传成功");
+    } else {
+        client.log("❌ 商品图片上传失败");
+    }
+%}
+
+### 5.2 上传多张图片
+POST {{baseUrl}}/products/{{productId}}/images
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "imageUrl": "https://oss-example.com/products/iphone-side.jpg",
+  "isPrimary": false
+}
+
+### 5.3 删除商品图片
+DELETE {{baseUrl}}/products/{{productId}}/images/img_123456
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 图片删除成功");
+    } else if (response.status === 404) {
+        client.log("⚠️ 图片不存在");
+    } else {
+        client.log("❌ 图片删除失败");
+    }
+%}
+
+### ================================================================================
+### 📊 商品统计查询
+### ================================================================================
+
+### 6.1 查询用户发布的商品
+GET {{baseUrl}}/products?sellerId={{merchantId}}&page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询用户商品成功");
+            client.log("📊 发布数量: " + body.data.length);
+        }
+    }
+%}
+
+### 6.2 查询已上架商品
+GET {{baseUrl}}/products?status=LISTED&page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询已上架商品成功");
+    }
+%}
+
+### 6.3 按价格范围筛选
+GET {{baseUrl}}/products?minPrice=1000&maxPrice=10000&page=1&size=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 价格范围筛选成功");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全和边界测试
+### ================================================================================
+
+### 7.1 SQL注入测试
+GET {{baseUrl}}/products?keyword=iPhone'; DROP TABLE products;--
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ SQL注入防护正常");
+    } else {
+        client.log("⚠️ 需要检查SQL注入防护");
+    }
+%}
+
+### 7.2 XSS攻击测试
+GET {{baseUrl}}/products?keyword=<script>alert('XSS')</script>
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ XSS防护正常");
+    } else {
+        client.log("⚠️ 需要检查XSS防护");
+    }
+%}
+
+### 7.3 价格边界测试
+POST {{baseUrl}}/products
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "负价格测试商品",
+  "description": "价格不应该为负数",
+  "basePrice": -100.00,
+  "category": "ELECTRONICS"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 负价格验证正常");
+    } else {
+        client.log("❌ 负价格验证异常");
+    }
+%}
+
+### 7.4 超长字符串测试
+POST {{baseUrl}}/products
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "name": "这是一个非常非常非常长的商品名称，超过了数据库字段的最大长度限制，应该被拒绝",
+  "description": "正常的描述",
+  "basePrice": 100.00,
+  "category": "ELECTRONICS"
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 字符串长度验证正常");
+    } else {
+        client.log("⚠️ 需要检查字符串长度验证");
+    }
+%}
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 确保已执行auth模块的商家登录，获取merchantToken
+### 2. 创建商品成功后，productId会自动保存供后续使用
+### 3. 拍卖模块依赖商品ID，所以先创建商品
+### 4. 图片上传需要配置OSS服务，否则可能失败
+### 5. 价格和库存等数值字段有范围限制，注意边界测试
+
+### ================================================================================
+### 📋 完整业务流程
+### ================================================================================
+
+### 流程：创建商品 → 上架商品 → 上传图片 → 查询商品 → 更新信息 → 下架商品
+### 按顺序执行上述接口，验证商品管理完整流程
+
+### ================================================================================

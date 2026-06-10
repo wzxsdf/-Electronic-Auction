@@ -1,0 +1,514 @@
+### ================================================================================
+### 💰 出价系统模块接口测试
+### ================================================================================
+### 功能：用户出价、查询出价历史、出价统计等
+### 依赖：需要用户Token和拍卖ID（auth + auctions模块）
+### 权限：注册用户
+### 限流：30次/分钟
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+@currentUserId = {{currentUserId}}
+@auctionId = {{auctionId}}
+
+### ================================================================================
+### 💵 用户出价
+### ================================================================================
+
+### 1.1 正常出价（高于当前价格）
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 8899.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 出价成功");
+            client.log("💰 出价金额: " + body.data.amount);
+            client.log("🎵 拍卖ID: " + body.data.auctionId);
+            client.log("👤 用户ID: " + body.data.userId);
+            client.log("🕐 出价时间: " + body.data.bidTime);
+            if (body.data.isHighestBid) {
+                client.log("🏆 当前最高出价！");
+            }
+        }
+    } else {
+        client.log("❌ 出价失败: " + response.body);
+    }
+%}
+
+### 1.2 高价出价（大幅度提高价格）
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 10000.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 高价出价成功");
+    }
+%}
+
+### 1.3 自动出价设置
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 12000.00,
+  "isAutoBid": true,
+  "maxAutoBidAmount": 15000.00
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 自动出价设置成功");
+        client.log("🤖 系统会自动帮您出到最高15000元");
+    }
+%}
+
+### 1.4 错误测试 - 低于当前价格
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 100.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 价格验证正常 - 出价必须高于当前价格");
+    } else {
+        client.log("❌ 价格验证异常");
+    }
+%}
+
+### 1.5 错误测试 - 负数出价
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": -100.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 负数出价验证正常");
+    } else {
+        client.log("❌ 负数出价验证异常");
+    }
+%}
+
+### 1.6 错误测试 - 不存在的拍卖
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": 99999,
+  "amount": 10000.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 404) {
+        client.log("✅ 拍卖不存在验证正常");
+    } else {
+        client.log("❌ 拍卖不存在验证异常");
+    }
+%}
+
+### 1.7 未登录出价测试（应该失败）
+POST {{baseUrl}}/bids
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 9000.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 未登录出价验证正常");
+    } else {
+        client.log("❌ 未登录出价验证异常");
+    }
+%}
+
+### ================================================================================
+### 📊 查询出价历史
+### ================================================================================
+
+### 2.1 查询拍卖出价历史（最新100条）
+GET {{baseUrl}}/bids/auction/{{auctionId}}?limit=100
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询出价历史成功");
+            client.log("📊 出价记录数: " + body.data.length);
+            if (body.data.length > 0) {
+                client.log("💰 最高出价: " + body.data[0].amount);
+                client.log("👤 出价用户: " + body.data[0].username);
+            }
+        }
+    }
+%}
+
+### 2.2 查询出价历史（限制10条）
+GET {{baseUrl}}/bids/auction/{{auctionId}}?limit=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询出价历史成功（10条）");
+    }
+%}
+
+### 2.3 查询出价历史（最大限制1000条）
+GET {{baseUrl}}/bids/auction/{{auctionId}}?limit=1000
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询出价历史成功（1000条）");
+    }
+%}
+
+### 2.4 错误测试 - 无效limit参数
+GET {{baseUrl}}/bids/auction/{{auctionId}}?limit=-10
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 参数验证正常 - limit必须大于0");
+    } else {
+        client.log("❌ 参数验证异常");
+    }
+%}
+
+### 2.5 错误测试 - 超大limit
+GET {{baseUrl}}/bids/auction/{{auctionId}}?limit=999999
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && body.data.length <= 1000) {
+            client.log("✅ 限制验证正常 - 最大1000条");
+        }
+    }
+%}
+
+### ================================================================================
+### 👤 查询用户出价记录
+### ================================================================================
+
+### 3.1 查询当前用户在指定拍卖中的出价
+GET {{baseUrl}}/bids/user/{{currentUserId}}/auction/{{auctionId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询用户出价记录成功");
+            client.log("📊 出价次数: " + body.data.length);
+            body.data.forEach(function(bid) {
+                client.log("  - 出价: " + bid.amount + " (" + bid.bidTime + ")");
+            });
+        }
+    }
+%}
+
+### 3.2 错误测试 - 查询其他用户的出价（隐私保护）
+GET {{baseUrl}}/bids/user/999/auction/{{auctionId}}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 隐私保护验证正常 - 不能查询其他用户出价");
+    } else {
+        client.log("⚠️ 隐私保护需要加强");
+    }
+%}
+
+### 3.3 错误测试 - 无效用户ID
+GET {{baseUrl}}/bids/user/-1/auction/{{auctionId}}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 用户ID验证正常");
+    } else {
+        client.log("❌ 用户ID验证异常");
+    }
+%}
+
+### ================================================================================
+### 📈 出价统计信息
+### ================================================================================
+
+### 4.1 获取拍卖出价统计
+GET {{baseUrl}}/bids/auction/{{auctionId}}/statistics
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 获取出价统计成功");
+            client.log("📊 总出价次数: " + body.data.totalBids);
+            client.log("👥 参与人数: " + body.data.participantCount);
+            client.log("🤖 自动出价数: " + body.data.autoBidCount);
+            client.log("💰 当前最高价: " + body.data.currentHighestPrice);
+            client.log("💰 当前最低价: " + body.data.currentLowestPrice);
+            client.log("💰 平均价: " + body.data.averagePrice);
+        }
+    }
+%}
+
+### 4.2 错误测试 - 无效拍卖ID
+GET {{baseUrl}}/bids/auction/99999/statistics
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 拍卖ID验证正常");
+    } else {
+        client.log("❌ 拍卖ID验证异常");
+    }
+%}
+
+### ================================================================================
+### 🏆 竞价排名查询
+### ================================================================================
+
+### 5.1 查询拍卖排行榜（前10名）
+GET {{baseUrl}}/bids/auction/{{auctionId}}/ranking?limit=10
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询竞价排行成功");
+            body.data.forEach(function(user, index) {
+                client.log("🏆 第" + (index + 1) + "名: " + user.username + " - " + user.highestBid);
+            });
+        }
+    }
+%}
+
+### 5.2 查询自己的排名
+GET {{baseUrl}}/bids/auction/{{auctionId}}/my-ranking
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询自己的排名成功");
+            client.log("🏆 当前排名: " + body.data.ranking);
+            client.log("💰 最高出价: " + body.data.highestBid);
+        }
+    }
+%}
+
+### ================================================================================
+### 🔄 出价修改和撤销
+### ================================================================================
+
+### 6.1 修改出价（如果允许）
+PUT {{baseUrl}}/bids/{{bidId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "amount": 9500.00
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 出价修改成功");
+    } else if (response.status === 403) {
+        client.log("⚠️ 出价修改被拒绝（业务规则不允许）");
+    }
+%}
+
+### 6.2 撤销出价（如果允许）
+DELETE {{baseUrl}}/bids/{{bidId}}
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 出价撤销成功");
+    } else if (response.status === 403) {
+        client.log("⚠️ 出价撤销被拒绝（业务规则不允许）");
+    }
+%}
+
+### ================================================================================
+### ⚡ 限流测试
+### ================================================================================
+
+### 7.1 快速多次出价（测试限流）
+### 快速连续执行以下出价接口，超过30次/分钟应该被限制
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 9000.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 429) {
+        client.log("✅ 限流验证正常 - 出价过于频繁");
+    } else if (response.status === 200) {
+        client.log("⚠️ 出价成功，注意不要过于频繁");
+    }
+%}
+
+### ================================================================================
+### 🔒 安全和业务规则测试
+### ================================================================================
+
+### 8.1 测试自己不能出价超过最高限价
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 999999999.99,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 最高限价验证正常");
+    } else {
+        client.log("❌ 最高限价验证异常");
+    }
+%}
+
+### 8.2 测试出价增量符合要求
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 8900.01,
+  "isAutoBid": false
+}
+
+> {%
+    // 如果增量为100元，那么8900.01这样的价格可能不符合要求
+    if (response.status === 400) {
+        client.log("✅ 出价增量验证正常");
+    } else {
+        client.log("⚠️ 出价增量验证需要检查");
+    }
+%}
+
+### 8.3 测试拍卖结束后不能出价
+### (需要先将拍卖状态改为COMPLETED)
+POST {{baseUrl}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "auctionItemId": {{auctionId}},
+  "amount": 10000.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 400) {
+        client.log("✅ 拍卖结束后出价验证正常");
+    } else if (response.status === 200) {
+        client.log("⚠️ 拍卖可能还在进行中");
+    }
+%}
+
+### ================================================================================
+### 📱 WebSocket实时通知测试
+### ================================================================================
+
+### 9.1 测试出价广播
+### 执行出价后，检查WebSocket客户端是否收到新价格通知
+### 预期：所有连接的用户收到价格更新通知
+
+### 9.2 测试最高出价变更通知
+### 当有新的最高出价时，WebSocket应该通知所有参与者
+### 预期：收到"新的最高出价"通知
+
+### 9.3 测试被超越通知
+### 当您的出价被超越时，应该收到通知
+### 预期：收到"您的出价已被超越"的通知
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 确保已执行auth模块的用户登录，获取authToken
+### 2. 确保已创建拍卖并开始，获得auctionId
+### 3. 只有ACTIVE状态的拍卖才能接受出价
+### 4. 出价金额必须高于当前价格，且符合增量要求
+### 5. 注意限流：30次/分钟，过于频繁会被限制
+### 6. 自动出价功能需要系统支持，检查是否正常工作
+
+### ================================================================================
+### 📋 完整出价流程
+### ================================================================================
+
+### 标准出价流程：
+### 1. 查询拍卖当前价格
+### 2. 出价（高于当前价格）
+### 3. 查询出价历史，确认出价成功
+### 4. 查询统计信息，查看自己的排名
+### 5. 如被超越，可以再次出价
+### 6. 拍卖结束后，最高出价者获胜
+
+### 竞价策略测试：
+### 1. 早期出价：刚开拍时出价
+### 2. 追逐出价：价格被超越后立即出价
+### 3. 最后时刻出价：拍卖即将结束时出价
+### 4. 自动出价：设置自动出价，系统自动竞价
+
+### ================================================================================
+### 🎯 出价场景模拟
+### ================================================================================
+
+### 场景1：两人竞价
+### 用户A出价9000元
+### 用户B出价9100元
+### 用户A出价9200元
+### ...直到一方放弃或拍卖结束
+
+### 场景2：多人竞价
+### 10个用户同时对一个拍卖出价
+### 观察价格变化和排名更新
+### 检查WebSocket通知是否及时
+
+### 场景3：自动出价对战
+### 用户A设置自动出价，最高12000元
+### 用户B手动出价，逐步提高价格
+### 观察自动出价系统是否正常工作
+
+### ================================================================================

@@ -1,0 +1,172 @@
+### ================================================================================
+### 🔧 公共配置和环境变量
+### ================================================================================
+### 说明：此文件包含所有模块共享的配置和变量
+### 使用：在其他 .http 文件中引用这些变量
+### ================================================================================
+
+# 服务器配置
+@baseUrl = http://localhost:8080/api
+@host = localhost
+@port = 8080
+
+# 认证Token（从登录接口自动获取）
+@authToken = {{authToken}}
+@merchantToken = {{merchantToken}}
+
+# 用户信息（从登录接口自动获取）
+@currentUserId = {{currentUserId}}
+@merchantId = {{merchantId}}
+
+# 业务实体ID（从创建接口自动获取）
+@productId = {{productId}}
+@auctionId = {{auctionId}}
+@orderId = {{orderId}}
+@bidId = {{bidId}}
+
+# 测试数据
+@testUsername = testuser_{{$timestamp}}
+@testPassword = test123456
+@testEmail = test_{{$timestamp}}@example.com
+
+# 时间格式
+@currentTimestamp = {{$timestamp}}
+@currentDateTime = {{$datetime iso8601}}
+
+### ================================================================================
+### 🔄 全局前置脚本示例
+### ================================================================================
+
+### Token提取脚本（在登录接口的响应处理中使用）
+> {%
+    // 检查响应状态
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+
+        // 提取Token
+        if (body.data && body.data.token) {
+            client.global.set("authToken", body.data.token);
+            client.log("✅ Token已保存: " + body.data.token.substring(0, 20) + "...");
+        }
+
+        // 提取用户ID
+        if (body.data && body.data.user && body.data.user.id) {
+            client.global.set("currentUserId", body.data.user.id);
+            client.log("🔖 用户ID: " + body.data.user.id);
+        }
+    } else {
+        client.log("❌ 请求失败: " + response.body);
+    }
+%}
+
+### 商家Token提取脚本
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+
+        if (body.data && body.data.token) {
+            client.global.set("merchantToken", body.data.token);
+            client.log("✅ 商家Token已保存");
+        }
+
+        if (body.data && body.data.user && body.data.user.id) {
+            client.global.set("merchantId", body.data.user.id);
+            client.log("🔖 商家ID: " + body.data.user.id);
+        }
+    }
+%}
+
+### 产品ID提取脚本
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+
+        if (body.data && body.data.id) {
+            client.global.set("productId", body.data.id);
+            client.log("✅ 商品ID已保存: " + body.data.id);
+        }
+    }
+%}
+
+### 拍卖ID提取脚本
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+
+        if (body.data && body.data.id) {
+            client.global.set("auctionId", body.data.id);
+            client.log("✅ 拍卖ID已保存: " + body.data.id);
+        }
+    }
+%}
+
+### 订单ID提取脚本
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+
+        if (body.data && body.data.id) {
+            client.global.set("orderId", body.data.id);
+            client.log("✅ 订单ID已保存: " + body.data.id);
+        }
+    }
+%}
+
+### ================================================================================
+### 🧪 基础测试接口
+### ================================================================================
+
+### 健康检查
+GET {{baseUrl}}/actuator/health
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 服务运行正常");
+    } else {
+        client.log("❌ 服务健康检查失败");
+    }
+%}
+
+### 服务信息
+GET {{baseUrl}}/actuator/info
+
+### ================================================================================
+### 📊 常用HTTP状态码参考
+### ================================================================================
+
+# 200 OK - 请求成功
+# 201 Created - 资源创建成功
+# 400 Bad Request - 请求参数错误
+# 401 Unauthorized - 未认证或认证失败
+# 403 Forbidden - 权限不足
+# 404 Not Found - 资源不存在
+# 500 Internal Server Error - 服务器内部错误
+# 503 Service Unavailable - 服务不可用
+
+### ================================================================================
+### 🎯 测试数据准备
+### ================================================================================
+
+### 生成随机测试数据
+### 用户名: testuser_1717785600000
+### 邮箱: test_1717785600000@example.com
+### 时间戳: 1717785600000
+
+### ================================================================================
+### 💡 使用说明
+### ================================================================================
+
+### 1. 在其他模块文件中引用变量：
+###    GET {{baseUrl}}/products/{{productId}}
+###    Authorization: Bearer {{authToken}}
+
+### 2. 复制响应处理脚本到对应接口：
+###    在接口末尾添加 > {%%} 脚本块
+
+### 3. 查看保存的变量：
+###    client.log("Token: " + client.global.get("authToken"));
+
+### 4. 清除所有变量：
+###    client.global.clearAll();
+
+### ================================================================================

@@ -13,18 +13,18 @@ import java.util.List;
 public interface AuctionItemMapper extends BaseMapper<AuctionItem> {
 
     @Select("SELECT ai.*, p.name as product_name, p.image_url as product_image_url, p.description, " +
-            "ar.title as room_title FROM auction_items ai " +
+            "a.title as auction_title FROM auction_items ai " +
             "LEFT JOIN products p ON ai.product_id = p.id " +
-            "LEFT JOIN auction_rooms ar ON ai.room_id = ar.id " +
+            "LEFT JOIN auctions a ON ai.auction_id = a.id " +
             "WHERE ai.id = #{itemId}")
     AuctionItem getDetailById(@Param("itemId") Long itemId);
 
     @Select("SELECT ai.*, p.name as product_name, p.image_url as product_image_url " +
             "FROM auction_items ai " +
             "LEFT JOIN products p ON ai.product_id = p.id " +
-            "WHERE ai.room_id = #{roomId} AND ai.status = #{status} " +
+            "WHERE ai.auction_id = #{auctionId} AND ai.status = #{status} " +
             "ORDER BY ai.display_order ASC, ai.id ASC")
-    List<AuctionItem> getItemsByRoomAndStatus(@Param("roomId") Long roomId, @Param("status") String status);
+    List<AuctionItem> getItemsByRoomAndStatus(@Param("auctionId") Long auctionId, @Param("status") String status);
 
     @Select("SELECT ai.*, p.name as product_name, p.image_url as product_image_url " +
             "FROM auction_items ai " +

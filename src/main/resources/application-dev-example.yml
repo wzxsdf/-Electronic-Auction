@@ -1,0 +1,58 @@
+spring:
+  datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/auction?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: your_database_username
+    password: your_database_password
+    druid:
+      # 初始连接数
+      initial-size: 10
+      # 最小空闲连接
+      min-idle: 10
+      # 最大连接数（根据实际负载调整）
+      max-active: 100
+      # 获取连接超时时间
+      max-wait: 10000
+      # 检测空闲连接间隔
+      time-between-eviction-runs-millis: 60000
+      # 连接最小生存时间
+      min-evictable-idle-time-millis: 300000
+      # 检测连接是否有效的 SQL
+      validation-query: SELECT 1
+      # 申请连接时检测
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      # 预编译语句池
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+
+  data:
+    redis:
+      host: your_redis_host
+      port: 6379
+      password: your_redis_password
+      database: 0
+      timeout: 3000
+      lettuce:
+        pool:
+          # 最大连接数
+          max-active: 100
+          # 最大空闲连接
+          max-idle: 50
+          # 最小空闲连接
+          min-idle: 10
+          # 连接等待超时
+          max-wait: 5000
+
+
+# 阿里云 OSS 配置
+oss:
+  region: oss-cn-beijing
+  endpoint: oss-cn-beijing.aliyuncs.com
+  access-key-id: your_oss_access_key_id
+  access-key-secret: your_oss_access_key_secret
+  bucket-name: your_bucket_name
+  key-prefix: products/
+  cdn-domain: ${OSS_PUBLIC_DOMAIN:}

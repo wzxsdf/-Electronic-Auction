@@ -1,0 +1,413 @@
+### ================================================================================
+### 🎯 拍卖商品模块接口测试
+### ================================================================================
+### 功能：拍卖商品查询、状态管理、房间关联等
+### 依赖：需要拍卖ID（auctions模块）
+### 权限：大部分公开，部分操作需要认证
+### 说明：拍卖商品是拍卖的具体执行单元
+### ================================================================================
+
+@baseUrl = http://localhost:8080/api
+@authToken = {{authToken}}
+@merchantToken = {{merchantToken}}
+@auctionId = {{auctionId}}
+
+### ================================================================================
+### 🔍 查询拍卖商品
+### ================================================================================
+
+### 1.1 查询拍卖商品详情
+GET {{baseUrl}}/auction-items/{{auctionId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 查询拍卖商品详情成功");
+            client.log("🎯 商品ID: " + body.data.id);
+            client.log("🎵 拍卖ID: " + body.data.auctionId);
+            client.log("📦 商品名称: " + body.data.productName);
+            client.log("💰 当前价格: " + body.data.currentPrice);
+            client.log("📊 状态: " + body.data.status);
+        }
+    } else {
+        client.log("❌ 查询拍卖商品详情失败");
+    }
+%}
+
+### 1.2 查询所有拍卖商品
+GET {{baseUrl}}/auction-items
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询所有拍卖商品成功");
+            client.log("📊 商品数量: " + body.data.length);
+        }
+    }
+%}
+
+### 1.3 查询活跃拍卖商品
+GET {{baseUrl}}/auction-items/active
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询活跃拍卖商品成功");
+            client.log("📊 活跃商品数: " + body.data.length);
+            body.data.forEach(function(item) {
+                client.log("🎯 " + item.productName + " - " + item.currentPrice);
+            });
+        }
+    }
+%}
+
+### ================================================================================
+### 🏠 房间关联查询
+### ================================================================================
+
+### 2.1 查询拍卖房间内的商品
+GET {{baseUrl}}/auction-items/room/{{auctionId}}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data && Array.isArray(body.data)) {
+            client.log("✅ 查询房间内商品成功");
+            client.log("📊 商品数量: " + body.data.length);
+        }
+    }
+%}
+
+### 2.2 查询房间内活跃商品
+GET {{baseUrl}}/auction-items/room/{{auctionId}}/active
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询房间内活跃商品成功");
+    }
+%}
+
+### ================================================================================
+### 🎮 商品操作
+### ================================================================================
+
+### 3.1 开始拍卖商品
+POST {{baseUrl}}/auction-items/{{auctionId}}/start
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖商品开始成功");
+    } else {
+        client.log("❌ 拍卖商品开始失败");
+    }
+%}
+
+### 3.2 暂停拍卖商品
+POST {{baseUrl}}/auction-items/{{auctionId}}/pause
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖商品暂停成功");
+    }
+%}
+
+### 3.3 恢复拍卖商品
+POST {{baseUrl}}/auction-items/{{auctionId}}/resume
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖商品恢复成功");
+    }
+%}
+
+### 3.4 结束拍卖商品
+POST {{baseUrl}}/auction-items/{{auctionId}}/end
+Authorization: Bearer {{merchantToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 拍卖商品结束成功");
+    }
+%}
+
+### ================================================================================
+### 💰 商品出价
+### ================================================================================
+
+### 4.1 对拍卖商品出价
+POST {{baseUrl}}/auction-items/{{auctionId}}/bid
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "amount": 9500.00,
+  "isAutoBid": false
+}
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 出价成功");
+            client.log("💰 出价金额: " + body.data.amount);
+            client.log("🏆 是否最高: " + body.data.isHighestBid);
+        }
+    } else {
+        client.log("❌ 出价失败");
+    }
+%}
+
+### 4.2 批量出价（测试）
+POST {{baseUrl}}/auction-items/{{auctionId}}/bids
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "bids": [
+    {"amount": 9600.00, "delaySeconds": 10},
+    {"amount": 9700.00, "delaySeconds": 20},
+    {"amount": 9800.00, "delaySeconds": 30}
+  ]
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 批量出价成功");
+    }
+%}
+
+### ================================================================================
+### 📊 商品统计
+### ================================================================================
+
+### 5.1 获取拍卖商品统计
+GET {{baseUrl}}/auction-items/{{auctionId}}/statistics
+
+> {%
+    if (response.status === 200) {
+        var body = JSON.parse(response.body);
+        if (body.data) {
+            client.log("✅ 获取商品统计成功");
+            client.log("📊 出价次数: " + body.data.bidCount);
+            client.log("👥 参与人数: " + body.data.participantCount);
+            client.log("💰 当前价格: " + body.data.currentPrice);
+            client.log("⏰ 剩余时间: " + body.data.remainingTime);
+        }
+    }
+%}
+
+### 5.2 获取商品热度排行
+GET {{baseUrl}}/auction-items/hot?limit=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取商品热度排行成功");
+    }
+%}
+
+### ================================================================================
+### 🔍 商品搜索和筛选
+### ================================================================================
+
+### 6.1 按价格范围筛选商品
+GET {{baseUrl}}/auction-items?minPrice=1000&maxPrice=10000
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按价格筛选成功");
+    }
+%}
+
+### 6.2 按状态筛选商品
+GET {{baseUrl}}/auction-items?status=ACTIVE
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按状态筛选成功");
+    }
+%}
+
+### 6.3 按商品类型筛选
+GET {{baseUrl}}/auction-items?category=ELECTRONICS
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 按类型筛选成功");
+    }
+%}
+
+### 6.4 搜索商品
+GET {{baseUrl}}/auction-items?keyword=iPhone
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 搜索商品成功");
+    }
+%}
+
+### ================================================================================
+### 🔄 商品状态管理
+### ================================================================================
+
+### 7.1 查询商品状态变更历史
+GET {{baseUrl}}/auction-items/{{auctionId}}/status-history
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 查询状态历史成功");
+    }
+%}
+
+### 7.2 手动更新商品状态
+PUT {{baseUrl}}/auction-items/{{auctionId}}/status
+Authorization: Bearer {{merchantToken}}
+Content-Type: application/json
+
+{
+  "status": "ACTIVE",
+  "reason": "手动激活"
+}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 商品状态更新成功");
+    }
+%}
+
+### ================================================================================
+### 🎯 商品推荐
+### ================================================================================
+
+### 8.1 获取推荐商品
+GET {{baseUrl}}/auction-items/recommendations?limit=10
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取推荐商品成功");
+    }
+%}
+
+### 8.2 获取相似商品
+GET {{baseUrl}}/auction-items/{{auctionId}}/similar
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 获取相似商品成功");
+    }
+%}
+
+### ================================================================================
+### 🔒 权限和错误测试
+### ================================================================================
+
+### 9.1 未授权开始商品
+POST {{baseUrl}}/auction-items/{{auctionId}}/start
+
+> {%
+    if (response.status === 401) {
+        client.log("✅ 未授权操作验证正常");
+    } else {
+        client.log("❌ 未授权操作验证异常");
+    }
+%}
+
+### 9.2 普通用户尝试开始商品
+POST {{baseUrl}}/auction-items/{{auctionId}}/start
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 403) {
+        client.log("✅ 权限验证正常");
+    } else {
+        client.log("❌ 权限验证异常");
+    }
+%}
+
+### 9.3 查询不存在的商品
+GET {{baseUrl}}/auction-items/99999
+
+> {%
+    if (response.status === 404) {
+        client.log("✅ 商品不存在验证正常");
+    } else {
+        client.log("❌ 商品不存在验证异常");
+    }
+%}
+
+### ================================================================================
+### 📱 实时更新
+### ================================================================================
+
+### 10.1 订阅商品实时更新
+POST {{baseUrl}}/auction-items/{{auctionId}}/subscribe
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 订阅商品更新成功");
+    }
+%}
+
+### 10.2 取消订阅
+DELETE {{baseUrl}}/auction-items/{{auctionId}}/subscribe
+Authorization: Bearer {{authToken}}
+
+> {%
+    if (response.status === 200) {
+        client.log("✅ 取消订阅成功");
+    }
+%}
+
+### ================================================================================
+### 💡 测试注意事项
+### ================================================================================
+
+### 1. 拍卖商品是拍卖的具体执行单元，与拍卖活动是一对一关系
+### 2. 商品状态变化会通过WebSocket通知订阅的用户
+### 3. 出价操作需要商品处于ACTIVE状态
+### 4. 价格变更会触发通知给所有参与者
+### 5. 商品结束时，最高出价者获胜并生成订单
+### 6. 推荐功能基于用户历史和商品相似度
+
+### ================================================================================
+### 📋 完整商品流程
+### ================================================================================
+
+### 标准流程：
+### 1. 查询商品详情
+### 2. 开始拍卖（变为ACTIVE状态）
+### 3. 用户出价参与竞拍
+### 4. 实时更新价格和排名
+### 5. 拍卖结束（变为COMPLETED状态）
+### 6. 生成订单给获胜者
+
+### 管理流程：
+### 1. 商家开始商品拍卖
+### 2. 监控出价情况
+### 3. 必要时暂停拍卖
+### 4. 问题解决后恢复拍卖
+### 5. 正常结束拍卖
+
+### ================================================================================
+### 🎯 业务场景
+### ================================================================================
+
+### 场景1：正常拍卖
+### 开始拍卖 → 用户出价 → 价格更新 → 拍卖结束 → 生成订单
+
+### 场景2：延迟结束
+### 拍卖即将结束 → 最后时刻出价 → 自动延迟 → 继续竞价
+
+### 场景3：流拍处理
+### 开始拍卖 → 无人出价 → 拍卖结束 → 标记为流拍
+
+### 场景4：异常处理
+### 开始拍卖 → 发现问题 → 暂停拍卖 → 处理问题 → 恢复拍卖
+
+### ================================================================================
