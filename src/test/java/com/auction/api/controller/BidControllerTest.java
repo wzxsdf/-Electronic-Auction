@@ -5,11 +5,14 @@ import com.auction.api.dto.response.BidResultResponse;
 import com.auction.common.Result;
 import com.auction.domain.entity.Auction;
 import com.auction.domain.entity.AuctionItem;
+import com.auction.domain.entity.Product;
 import com.auction.domain.entity.User;
 import com.auction.domain.enums.AuctionStatus;
+import com.auction.domain.enums.ProductStatus;
 import com.auction.infrastructure.security.UserPrincipal;
 import com.auction.repository.AuctionItemRepository;
 import com.auction.repository.AuctionRepository;
+import com.auction.repository.ProductRepository;
 import com.auction.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +47,9 @@ public class BidControllerTest {
     @Autowired
     private AuctionItemRepository auctionItemRepository;
 
+    @Autowired
+    private ProductRepository productRepository;
+
     private User testUser;
     private Auction testAuction;
     private AuctionItem testAuctionItem;
@@ -56,6 +62,7 @@ public class BidControllerTest {
         testUser.setUsername("bidder_test");
         testUser.setNickname("测试出价者");
         testUser.setEmail("bidder@test.com");
+        testUser.setPassword("$2a$10$N9qo8uLOickgx2ZMRZoMye/0VsIhHcjF/iLJp8PYG9P0BqLquN8Ea"); // 加密密码
         testUser.setStatus("ACTIVE");
         testUser = userRepository.save(testUser);
 
@@ -75,9 +82,21 @@ public class BidControllerTest {
         testAuction.setStatusEnum(AuctionStatus.ACTIVE);
         testAuction = auctionRepository.save(testAuction);
 
+        // 创建测试商品
+        Product testProduct = new Product();
+        testProduct.setName("测试商品");
+        testProduct.setDescription("测试用商品");
+        testProduct.setInitialPrice(new BigDecimal("100.00"));
+        testProduct.setBidIncrement(new BigDecimal("10.00"));
+        testProduct.setMaxPrice(new BigDecimal("1000.00"));
+        testProduct.setStatus(ProductStatus.LISTED);
+        testProduct.setMerchantId(testUser.getId());
+        testProduct = productRepository.save(testProduct);
+
         // 创建测试拍品
         testAuctionItem = new AuctionItem();
         testAuctionItem.setAuctionId(testAuction.getId());
+        testAuctionItem.setProductId(testProduct.getId());
         testAuctionItem.setTitle("测试拍品");
         testAuctionItem.setStartPrice(new BigDecimal("100.00"));
         testAuctionItem.setCurrentPrice(new BigDecimal("100.00"));
@@ -168,6 +187,7 @@ public class BidControllerTest {
         user2.setUsername("bidder2");
         user2.setNickname("出价者2");
         user2.setEmail("bidder2@test.com");
+        user2.setPassword("$2a$10$N9qo8uLOickgx2ZMRZoMye/0VsIhHcjF/iLJp8PYG9P0BqLquN8Ea");
         user2.setStatus("ACTIVE");
         user2 = userRepository.save(user2);
 
@@ -211,6 +231,7 @@ public class BidControllerTest {
             users[i].setUsername("bidder" + (i + 1));
             users[i].setNickname("出价者" + (i + 1));
             users[i].setEmail("bidder" + (i + 1) + "@test.com");
+            users[i].setPassword("$2a$10$N9qo8uLOickgx2ZMRZoMye/0VsIhHcjF/iLJp8PYG9P0BqLquN8Ea");
             users[i].setStatus("ACTIVE");
             users[i] = userRepository.save(users[i]);
 
@@ -312,5 +333,174 @@ public class BidControllerTest {
                 "错误消息应该提示无活跃拍品");
 
         log.info("无活跃拍品测试成功: {}", result.getMessage());
+    }
+
+    /**
+     * 测试封顶价自动成交功能
+     */
+    @Test
+    public void testMaxPriceAutoTransaction() {
+        log.info("测试封顶价自动成交功能");
+
+        // 创建一个测试商品
+        Product maxPriceProduct = new Product();
+        maxPriceProduct.setName("封顶价测试商品");
+        maxPriceProduct.setDescription("封顶价测试用商品");
+        maxPriceProduct.setInitialPrice(new BigDecimal("100.00"));
+        maxPriceProduct.setBidIncrement(new BigDecimal("50.00"));
+        maxPriceProduct.setMaxPrice(new BigDecimal("500.00"));
+        maxPriceProduct.setStatus(ProductStatus.LISTED);
+        maxPriceProduct.setMerchantId(testUser.getId());
+        maxPriceProduct = productRepository.save(maxPriceProduct);
+
+        // 创建一个测试拍品，设置封顶价为500元
+        AuctionItem maxPriceItem = new AuctionItem();
+        maxPriceItem.setAuctionId(testAuction.getId());
+        maxPriceItem.setProductId(maxPriceProduct.getId());
+        maxPriceItem.setTitle("封顶价测试拍品");
+        maxPriceItem.setStartPrice(new BigDecimal("100.00"));
+        maxPriceItem.setCurrentPrice(new BigDecimal("400.00"));
+        maxPriceItem.setBidIncrement(new BigDecimal("50.00"));
+        maxPriceItem.setMaxPrice(new BigDecimal("500.00")); // 封顶价500元
+        maxPriceItem.setDelaySeconds(300);
+        maxPriceItem.setStartTime(LocalDateTime.now().minusHours(1));
+        maxPriceItem.setEndTime(LocalDateTime.now().plusHours(2));
+        maxPriceItem.setStatusEnum(AuctionStatus.ACTIVE);
+        maxPriceItem.setBidCount(0);
+        maxPriceItem = auctionItemRepository.save(maxPriceItem);
+
+        // 出价达到封顶价500元
+        PlaceBidRequest request = new PlaceBidRequest();
+        request.setAuctionId(testAuction.getId());
+        request.setAuctionItemId(maxPriceItem.getId());
+        request.setUserId(testUser.getId());
+        request.setAmount(new BigDecimal("500.00")); // 正好等于封顶价
+        request.setIsAutoBid(false);
+
+        Result<BidResultResponse> result = bidController.placeBid(request, testUserPrincipal);
+
+        assertNotNull(result, "出价结果不应为null");
+        assertEquals(200, result.getCode(), "达到封顶价出价应该成功");
+
+        BidResultResponse response = result.getData();
+        assertNotNull(response, "出价结果数据不应为null");
+        assertEquals(new BigDecimal("500.00"), response.getCurrentPrice(), "当前价格应该是500.00");
+        assertTrue(response.getMaxPriceReached(), "应该标记为达到封顶价");
+        assertTrue(response.getMessage().contains("自动成交") ||
+                  response.getMessage().contains("封顶价"),
+                  "消息应该包含自动成交信息");
+
+        log.info("封顶价成交测试成功: currentPrice={}, maxPriceReached={}, message={}",
+                response.getCurrentPrice(), response.getMaxPriceReached(), response.getMessage());
+    }
+
+    /**
+     * 测试出价超过封顶价应该失败
+     */
+    @Test
+    public void testBidExceedMaxPrice() {
+        log.info("测试出价超过封顶价应该失败");
+
+        // 创建一个测试商品
+        Product exceedPriceProduct = new Product();
+        exceedPriceProduct.setName("超过封顶价测试商品");
+        exceedPriceProduct.setDescription("超过封顶价测试用商品");
+        exceedPriceProduct.setInitialPrice(new BigDecimal("100.00"));
+        exceedPriceProduct.setBidIncrement(new BigDecimal("50.00"));
+        exceedPriceProduct.setMaxPrice(new BigDecimal("300.00"));
+        exceedPriceProduct.setStatus(ProductStatus.LISTED);
+        exceedPriceProduct.setMerchantId(testUser.getId());
+        exceedPriceProduct = productRepository.save(exceedPriceProduct);
+
+        // 创建一个测试拍品，设置封顶价为300元
+        AuctionItem maxPriceItem = new AuctionItem();
+        maxPriceItem.setAuctionId(testAuction.getId());
+        maxPriceItem.setProductId(exceedPriceProduct.getId());
+        maxPriceItem.setTitle("封顶价限制测试拍品");
+        maxPriceItem.setStartPrice(new BigDecimal("100.00"));
+        maxPriceItem.setCurrentPrice(new BigDecimal("200.00"));
+        maxPriceItem.setBidIncrement(new BigDecimal("50.00"));
+        maxPriceItem.setMaxPrice(new BigDecimal("300.00")); // 封顶价300元
+        maxPriceItem.setDelaySeconds(300);
+        maxPriceItem.setStartTime(LocalDateTime.now().minusHours(1));
+        maxPriceItem.setEndTime(LocalDateTime.now().plusHours(2));
+        maxPriceItem.setStatusEnum(AuctionStatus.ACTIVE);
+        maxPriceItem.setBidCount(0);
+        maxPriceItem = auctionItemRepository.save(maxPriceItem);
+
+        // 尝试出价超过封顶价（350元 > 300元）
+        PlaceBidRequest request = new PlaceBidRequest();
+        request.setAuctionId(testAuction.getId());
+        request.setAuctionItemId(maxPriceItem.getId());
+        request.setUserId(testUser.getId());
+        request.setAmount(new BigDecimal("350.00")); // 超过封顶价
+        request.setIsAutoBid(false);
+
+        Result<BidResultResponse> result = bidController.placeBid(request, testUserPrincipal);
+
+        assertNotNull(result, "出价结果不应为null");
+        assertNotEquals(200, result.getCode(), "超过封顶价的出价应该失败");
+        assertTrue(result.getMessage().contains("封顶价") ||
+                  result.getMessage().contains("超过"),
+                  "错误消息应该提示超过封顶价");
+
+        log.info("超过封顶价测试成功: {}", result.getMessage());
+    }
+
+    /**
+     * 测试出价低于封顶价正常成交
+     */
+    @Test
+    public void testBidBelowMaxPrice() {
+        log.info("测试出价低于封顶价正常成交");
+
+        // 创建一个测试商品
+        Product belowPriceProduct = new Product();
+        belowPriceProduct.setName("低于封顶价测试商品");
+        belowPriceProduct.setDescription("低于封顶价测试用商品");
+        belowPriceProduct.setInitialPrice(new BigDecimal("100.00"));
+        belowPriceProduct.setBidIncrement(new BigDecimal("50.00"));
+        belowPriceProduct.setMaxPrice(new BigDecimal("800.00"));
+        belowPriceProduct.setStatus(ProductStatus.LISTED);
+        belowPriceProduct.setMerchantId(testUser.getId());
+        belowPriceProduct = productRepository.save(belowPriceProduct);
+
+        // 创建一个测试拍品，设置封顶价为800元
+        AuctionItem maxPriceItem = new AuctionItem();
+        maxPriceItem.setAuctionId(testAuction.getId());
+        maxPriceItem.setProductId(belowPriceProduct.getId());
+        maxPriceItem.setTitle("低于封顶价测试拍品");
+        maxPriceItem.setStartPrice(new BigDecimal("100.00"));
+        maxPriceItem.setCurrentPrice(new BigDecimal("400.00"));
+        maxPriceItem.setBidIncrement(new BigDecimal("50.00"));
+        maxPriceItem.setMaxPrice(new BigDecimal("800.00")); // 封顶价800元
+        maxPriceItem.setDelaySeconds(300);
+        maxPriceItem.setStartTime(LocalDateTime.now().minusHours(1));
+        maxPriceItem.setEndTime(LocalDateTime.now().plusHours(2));
+        maxPriceItem.setStatusEnum(AuctionStatus.ACTIVE);
+        maxPriceItem.setBidCount(0);
+        maxPriceItem = auctionItemRepository.save(maxPriceItem);
+
+        // 出价600元（低于封顶价800元）
+        PlaceBidRequest request = new PlaceBidRequest();
+        request.setAuctionId(testAuction.getId());
+        request.setAuctionItemId(maxPriceItem.getId());
+        request.setUserId(testUser.getId());
+        request.setAmount(new BigDecimal("600.00")); // 低于封顶价
+        request.setIsAutoBid(false);
+
+        Result<BidResultResponse> result = bidController.placeBid(request, testUserPrincipal);
+
+        assertNotNull(result, "出价结果不应为null");
+        assertEquals(200, result.getCode(), "低于封顶价的出价应该成功");
+
+        BidResultResponse response = result.getData();
+        assertNotNull(response, "出价结果数据不应为null");
+        assertEquals(new BigDecimal("600.00"), response.getCurrentPrice(), "当前价格应该是600.00");
+        assertFalse(response.getMaxPriceReached(), "不应该标记为达到封顶价");
+        assertEquals("出价成功", response.getMessage(), "消息应该是'出价成功'");
+
+        log.info("低于封顶价测试成功: currentPrice={}, maxPriceReached={}",
+                response.getCurrentPrice(), response.getMaxPriceReached());
     }
 }

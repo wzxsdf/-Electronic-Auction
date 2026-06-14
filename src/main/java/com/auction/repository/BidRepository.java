@@ -143,4 +143,18 @@ public class BidRepository {
     public Long countUsersWithHigherBid(Long auctionItemId, java.math.BigDecimal amount) {
         return bidMapper.countUsersWithHigherBid(auctionItemId, amount);
     }
+
+    /**
+     * 获取拍品的竞拍排行榜
+     * 按用户分组，返回每个用户的最高出价、出价次数、最后出价时间等信息
+     * 按最高出价金额降序排列
+     *
+     * @param auctionItemId 拍品ID
+     * @param limit 返回数量限制（默认10，最大100）
+     * @return 排行榜数据
+     */
+    public java.util.List<java.util.Map<String, Object>> getBidRanking(Long auctionItemId, int limit) {
+        int actualLimit = Math.min(Math.max(limit, 1), 100); // 限制在1-100之间
+        return bidMapper.getBidRanking(auctionItemId, actualLimit);
+    }
 }

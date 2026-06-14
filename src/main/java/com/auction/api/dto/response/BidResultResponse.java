@@ -59,6 +59,26 @@ public class BidResultResponse {
     private Boolean wasExtended;
 
     /**
+     * 延时次数
+     */
+    private Integer delayCount;
+
+    /**
+     * 是否达到封顶价自动成交
+     */
+    private Boolean maxPriceReached;
+
+    /**
+     * 出价次数统计
+     */
+    private Integer bidCount;
+
+    /**
+     * 响应耗时（毫秒）- 用于性能监控
+     */
+    private Long elapsedTimeMs;
+
+    /**
      * 提示消息
      */
     private String message;

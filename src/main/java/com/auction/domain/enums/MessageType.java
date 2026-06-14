@@ -24,6 +24,7 @@ public enum MessageType {
     PRICE_UPDATE("价格更新"),
     LEADERBOARD_UPDATE("排行榜更新"),
     BID_FAILED("出价失败"),
+    MAX_PRICE_REACHED("封顶价成交"),
 
     // 用户通知相关
     YOU_ARE_LEADING("你领先了"),
@@ -31,6 +32,7 @@ public enum MessageType {
     YOU_LOST("很遗憾，您未成交"),
     YOU_WON("恭喜您竞拍成功"),
     AUCTION_STARTED_FOLLOWER("您关注的拍卖活动已开始"),
+    AUCTION_ENDING_SOON("拍卖活动即将结束"),
 
     // 支付相关
     PAYMENT_SUCCESS("支付成功"),

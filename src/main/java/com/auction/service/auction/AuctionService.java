@@ -10,6 +10,7 @@ import com.auction.domain.entity.AuctionItem;
 import com.auction.domain.entity.Product;
 import com.auction.domain.enums.AuctionStatus;
 import com.auction.domain.enums.ProductStatus;
+import com.auction.domain.event.AuctionStartedEvent;
 import com.auction.infrastructure.redis.RedisService;
 import com.auction.repository.AuctionItemRepository;
 import com.auction.repository.AuctionRepository;
@@ -17,6 +18,7 @@ import com.auction.repository.ProductRepository;
 import com.auction.service.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +46,7 @@ public class AuctionService {
     private final ProductRepository productRepository;
     private final RedisService redisService;
     private final NotificationService notificationService;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * 创建拍卖活动
@@ -176,6 +179,23 @@ public class AuctionService {
             notificationService.notifyAuctionStartedToFollower(auctionId);
         } catch (Exception e) {
             log.error("通知关注者失败: auctionId={}, error={}", auctionId, e.getMessage(), e);
+            // 不影响主业务流程，仅记录日志
+        }
+
+        // 发布活动开始事件（触发延时通知等后续处理）
+        try {
+            AuctionStartedEvent event = AuctionStartedEvent.create(
+                    auction.getId(),
+                    auction.getTitle(),
+                    auction.getHostId(),
+                    auction.getStartTime(),
+                    auction.getEndTime(),
+                    operatorId
+            );
+            eventPublisher.publishEvent(event);
+            log.info("已发布拍卖活动开始事件: auctionId={}", auctionId);
+        } catch (Exception e) {
+            log.error("发布活动开始事件失败: auctionId={}, error={}", auctionId, e.getMessage(), e);
             // 不影响主业务流程，仅记录日志
         }
 

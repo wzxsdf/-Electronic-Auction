@@ -200,4 +200,22 @@ public class AuctionRepository {
                 .ge(Auction::getEndTime, now)
         );
     }
+
+    /**
+     * 查找即将结束的活动（用于通知商家）
+     * 查询结束时间在指定时间范围内的活跃活动
+     *
+     * @param startTime 开始时间
+     * @param endTime 结束时间
+     * @return 即将结束的活动列表
+     */
+    public List<Auction> findAuctionsEndingBetween(LocalDateTime startTime, LocalDateTime endTime) {
+        return auctionMapper.selectList(
+            new LambdaQueryWrapper<Auction>()
+                .eq(Auction::getStatus, AuctionStatus.ACTIVE.name())
+                .ge(Auction::getEndTime, startTime)
+                .le(Auction::getEndTime, endTime)
+                .orderByAsc(Auction::getEndTime)
+        );
+    }
 }

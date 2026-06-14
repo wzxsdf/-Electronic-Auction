@@ -14,6 +14,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -95,11 +96,11 @@ public class WsMessageService {
             Object bidderObj = redisService.get(auctionKey + ":highest_bidder");
             Object countObj = redisService.get(auctionKey + ":bid_count");
 
-            Map<String, Object> data = Map.of(
-                "currentPrice", priceObj != null ? new BigDecimal(priceObj.toString()) : BigDecimal.ZERO,
-                "highestBidder", bidderObj != null ? Long.parseLong(bidderObj.toString()) : null,
-                "bidCount", countObj != null ? Integer.parseInt(countObj.toString()) : 0
-            );
+            // 使用HashMap以支持null值
+            Map<String, Object> data = new HashMap<>();
+            data.put("currentPrice", priceObj != null ? new BigDecimal(priceObj.toString()) : BigDecimal.ZERO);
+            data.put("highestBidder", bidderObj != null ? Long.parseLong(bidderObj.toString()) : null);
+            data.put("bidCount", countObj != null ? Integer.parseInt(countObj.toString()) : 0);
 
             // 注意：此方法用于Auction类型，已废弃
             // 请使用 broadcastItemPriceUpdate(auctionItemId) 方法
@@ -204,13 +205,13 @@ public class WsMessageService {
     @Async("websocketTaskExecutor")
     public void sendAuctionEnded(Long auctionId, Long winnerId, java.math.BigDecimal finalPrice, boolean hasBids) {
         try {
-            Map<String, Object> data = Map.of(
-                "auctionId", auctionId,
-                "winnerId", winnerId,
-                "finalPrice", finalPrice,
-                "hasBids", hasBids,
-                "message", hasBids ? "竞拍已结束，恭喜成交！" : "竞拍已结束，无人出价"
-            );
+            // 使用HashMap以支持null值
+            Map<String, Object> data = new HashMap<>();
+            data.put("auctionId", auctionId);
+            data.put("winnerId", winnerId);
+            data.put("finalPrice", finalPrice);
+            data.put("hasBids", hasBids);
+            data.put("message", hasBids ? "竞拍已结束，恭喜成交！" : "竞拍已结束，无人出价");
 
             // 注意：此方法用于Auction类型，已废弃
             // 请使用 sendAuctionItemEnded(auctionItemId, ...) 方法
@@ -436,6 +437,39 @@ public class WsMessageService {
     }
 
     /**
+     * 异步发送拍卖活动即将结束通知给商家
+     * <p>
+     * 当拍卖活动距离结束时间不足指定时间（如10分钟）时，向活动创建者（商家）发送即将结束通知
+     *
+     * @param merchantId 商家用户ID（活动创建者）
+     * @param auctionId 拍卖活动ID
+     * @param auctionTitle 拍卖活动标题
+     * @param endTime 结束时间
+     * @param remainingMinutes 剩余分钟数
+     */
+    @Async("websocketTaskExecutor")
+    public void sendAuctionEndingSoonToMerchant(Long merchantId, Long auctionId, String auctionTitle, LocalDateTime endTime, int remainingMinutes) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionId", auctionId,
+                "auctionTitle", auctionTitle,
+                "endTime", endTime.toString(),
+                "remainingMinutes", remainingMinutes,
+                "message", "您的拍卖活动即将结束，请及时关注竞价情况"
+            );
+
+            roomManager.sendToUser(merchantId,
+                createMessage(MessageType.AUCTION_ENDING_SOON, data, auctionId)
+            );
+
+            log.info("发送拍卖即将结束通知成功: merchantId={}, auctionId={}, remainingMinutes={}",
+                    merchantId, auctionId, remainingMinutes);
+        } catch (Exception e) {
+            log.error("发送拍卖即将结束通知失败: merchantId={}, auctionId={}", merchantId, auctionId, e);
+        }
+    }
+
+    /**
      * 创建标准化的WebSocket消息格式
      * <p>
      * 构造符合系统规范的WebSocket消息结构，包含：
@@ -578,14 +612,14 @@ public class WsMessageService {
     @Async("websocketTaskExecutor")
     public void sendAuctionItemEnded(Long auctionItemId, Long winnerId, java.math.BigDecimal finalPrice, String winnerUsername, boolean hasBids) {
         try {
-            Map<String, Object> data = Map.of(
-                "auctionItemId", auctionItemId,
-                "winnerId", winnerId,
-                "winnerUsername", winnerUsername != null ? maskUsername(winnerUsername) : null,
-                "finalPrice", finalPrice,
-                "hasBids", hasBids,
-                "message", hasBids ? ("拍品已成交，中标用户：" + (winnerUsername != null ? maskUsername(winnerUsername) : "未知")) : "拍品流拍"
-            );
+            // 使用HashMap以支持null值（Map.of不允许null）
+            Map<String, Object> data = new HashMap<>();
+            data.put("auctionItemId", auctionItemId);
+            data.put("winnerId", winnerId);
+            data.put("winnerUsername", winnerUsername != null ? maskUsername(winnerUsername) : null);
+            data.put("finalPrice", finalPrice);
+            data.put("hasBids", hasBids);
+            data.put("message", hasBids ? ("拍品已成交，中标用户：" + (winnerUsername != null ? maskUsername(winnerUsername) : "未知")) : "拍品流拍");
 
             // 统一使用 "item:" + auctionItemId 格式
             roomManager.broadcastToRoom(
@@ -622,6 +656,111 @@ public class WsMessageService {
             );
         } catch (Exception e) {
             log.error("发送拍品延时通知失败: auctionItemId={}", auctionItemId, e);
+        }
+    }
+
+    /**
+     * 异步发送封顶价成交通知
+     * <p>
+     * 当有出价达到封顶价时，通知所有用户该拍品已自动成交
+     *
+     * @param auctionItemId 拍品ID
+     * @param finalPrice 最终成交价格
+     * @param winnerId 成功者ID
+     * @param winnerName 成功者用户名
+     */
+    @Async("websocketTaskExecutor")
+    public void sendMaxPriceReached(Long auctionItemId, java.math.BigDecimal finalPrice,
+                                   Long winnerId, String winnerName) {
+        try {
+            // 转换为时间戳（毫秒）
+            Long endTimeTimestamp = java.time.LocalDateTime.now()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toInstant().toEpochMilli();
+
+            Map<String, Object> data = Map.of(
+                "auctionItemId", auctionItemId,
+                "finalPrice", finalPrice,
+                "winnerId", winnerId,
+                "winnerName", maskUsername(winnerName),
+                "endTimeTimestamp", endTimeTimestamp,
+                "message", "🎉 达到封顶价，自动成交！"
+            );
+
+            // 统一使用 "item:" + auctionItemId 格式
+            roomManager.broadcastToRoom(
+                "item:" + auctionItemId,
+                createMessage(MessageType.MAX_PRICE_REACHED, data, auctionItemId)
+            );
+
+            log.info("封顶价成交通知已发送: auctionItemId={}, winnerId={}, finalPrice={}",
+                    auctionItemId, winnerId, finalPrice);
+        } catch (Exception e) {
+            log.error("发送封顶价成交通知失败: auctionItemId={}", auctionItemId, e);
+        }
+    }
+
+    /**
+     * 异步推送排行榜更新消息
+     * <p>
+     * 当排行榜发生变化时（新出价、排名更新等），向房间内所有用户推送最新的排行榜数据
+     *
+     * @param auctionItemId 拍品ID
+     * @param rankingData 排行榜数据
+     */
+    @Async("websocketTaskExecutor")
+    public void sendRankingUpdate(Long auctionItemId, java.util.Map<String, Object> rankingData) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionItemId", auctionItemId,
+                "totalParticipants", rankingData.getOrDefault("totalParticipants", 0),
+                "currentPrice", rankingData.getOrDefault("currentPrice", 0),
+                "bidIncrement", rankingData.getOrDefault("bidIncrement", 0),
+                "topRankings", rankingData.getOrDefault("topRankings", java.util.List.of()),
+                "message", "排行榜已更新"
+            );
+
+            // 统一使用 "item:" + auctionItemId 格式
+            roomManager.broadcastToRoom(
+                "item:" + auctionItemId,
+                createMessage(MessageType.LEADERBOARD_UPDATE, data, auctionItemId)
+            );
+
+            log.debug("排行榜更新已推送: auctionItemId={}", auctionItemId);
+        } catch (Exception e) {
+            log.error("推送排行榜更新失败: auctionItemId={}", auctionItemId, e);
+        }
+    }
+
+    /**
+     * 异步发送排行榜大幅变动通知
+     * <p>
+     * 当排行榜发生显著变化时（如领先者变更、价格突破等），发送重要通知
+     *
+     * @param auctionItemId 拍品ID
+     * @param changeType 变化类型（LEADER_CHANGE=领先者变更，PRICE_BREAKTHROUGH=价格突破，MILESTONE=里程碑）
+     * @param description 变化描述
+     */
+    @Async("websocketTaskExecutor")
+    public void sendRankingMajorChange(Long auctionItemId, String changeType, String description) {
+        try {
+            Map<String, Object> data = Map.of(
+                "auctionItemId", auctionItemId,
+                "changeType", changeType,
+                "description", description,
+                "message", "排行榜重要变化",
+                "timestamp", System.currentTimeMillis()
+            );
+
+            // 统一使用 "item:" + auctionItemId 格式
+            roomManager.broadcastToRoom(
+                "item:" + auctionItemId,
+                createMessage(MessageType.LEADERBOARD_UPDATE, data, auctionItemId)
+            );
+
+            log.info("排行榜重要变化已推送: auctionItemId={}, changeType={}", auctionItemId, changeType);
+        } catch (Exception e) {
+            log.error("推送排行榜重要变化失败: auctionItemId={}, error={}", auctionItemId, e.getMessage(), e);
         }
     }
 }

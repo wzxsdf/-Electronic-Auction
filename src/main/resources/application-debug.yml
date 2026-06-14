@@ -1,0 +1,17 @@
+# 开发环境配置 - 启用调试功能
+spring:
+  profiles:
+    active: debug
+
+app:
+  debug:
+    enabled: true  # 启用调试接口
+    delay-queue:
+      enabled: true
+      log-level: DEBUG
+
+logging:
+  level:
+    com.auction.service.delay: DEBUG
+    com.auction.service.event: DEBUG
+    org.redisson: INFO

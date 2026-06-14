@@ -28,6 +28,7 @@ public enum ErrorCode {
     BID_FREQUENCY_HIGH(2003, "出价频率过高，请稍后再试"),
     BID_USER_BLOCKED(2004, "账户已被限制，无法出价"),
     BID_EXCEED_MAX_PRICE(2005, "出价超过封顶价"),
+    BID_MAX_PRICE_REACHED(2006, "达到封顶价，自动成交"),
 
     // 用户相关 3000-3999
     USER_NOT_FOUND(3001, "用户不存在"),

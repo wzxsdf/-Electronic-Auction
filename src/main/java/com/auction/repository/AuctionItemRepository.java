@@ -120,6 +120,42 @@ public class AuctionItemRepository {
     }
 
     /**
+     * 更新拍品状态快照（支持乐观锁）
+     * <p>
+     * 用于 MQ 消费者异步更新数据库状态
+     * 使用乐观锁避免并发冲突
+     *
+     * @param auctionItemId 拍品ID
+     * @param currentPrice 当前价格
+     * @param highestBidder 最高出价者ID
+     * @param bidCount 出价次数
+     * @param endTime 结束时间
+     * @param delayCount 延时次数
+     * @param version 乐观锁版本号
+     * @return 更新成功的行数（0表示版本冲突）
+     */
+    public int updateItemSnapshot(
+            Long auctionItemId,
+            java.math.BigDecimal currentPrice,
+            Long highestBidder,
+            Integer bidCount,
+            java.time.LocalDateTime endTime,
+            Integer delayCount,
+            Integer version
+    ) {
+        AuctionItem item = new AuctionItem();
+        item.setId(auctionItemId);
+        item.setCurrentPrice(currentPrice);
+        item.setHighestBidder(highestBidder);
+        item.setBidCount(bidCount);
+        item.setEndTime(endTime);
+        item.setDelayCount(delayCount);
+        item.setVersion(version);
+
+        return auctionItemMapper.updateById(item);  // MyBatis-Plus 自动使用 @Version 字段
+    }
+
+    /**
      * 删除拍品
      */
     public void deleteById(Long id) {

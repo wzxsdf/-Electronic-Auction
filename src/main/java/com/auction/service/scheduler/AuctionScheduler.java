@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
  * <p>
  * 负责处理拍品相关的定时任务，包括：
  * 1. 拍品自动结算 - 结束到期的活跃拍品
- * 2. 拍品自动开始 - 启动待开始的拍品
  * <p>
  * 重构说明：
  * - 删除了Auction级别的延时检查（延时机制已在出价时触发）
  * - 删除了Auction级别的数据一致性检查（新架构无Auction级缓存）
+ * - 删除了拍卖活动即将结束通知定时任务（改用事件驱动+Redisson延时队列）
  * - 所有操作改为AuctionItem级别
  */
 @Slf4j

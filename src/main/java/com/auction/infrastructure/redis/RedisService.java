@@ -29,6 +29,13 @@ public class RedisService {
     }
 
     /**
+     * 检查键是否存在
+     */
+    public Boolean hasKey(String key) {
+        return redisTemplate.hasKey(key);
+    }
+
+    /**
      * 获取缓存并转换指定类型
      * 解决 Redis 反序列化时 LinkedHashMap 无法直接转换为具体类型的问题
      */
